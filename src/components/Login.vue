@@ -1,28 +1,34 @@
 <template>
-  <div>
-    <h1>Iniciar Sesión</h1>
-    <form v-if="!isVerifying" @submit.prevent="loginUser">
-      <label for="username">Usuario</label>
-      <input type="text" id="username" v-model="username" required />
-      
-      <label for="password">Contraseña</label>
-      <input type="password" id="password" v-model="password" required />
+  <div class="container mt-5">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <h1 class="text-center mb-4">Iniciar Sesión</h1>
+        <form v-if="!isVerifying" @submit.prevent="loginUser" class="shadow p-4 rounded bg-light">
+          <div class="form-group mb-3">
+            <label for="username" class="form-label">Usuario</label>
+            <input type="text" id="username" v-model="username" class="form-control input-field" required />
+          </div>
+          <div class="form-group mb-3">
+            <label for="password" class="form-label">Contraseña</label>
+            <input type="password" id="password" v-model="password" class="form-control input-field" required />
+          </div>
+          <div class="mb-3 text-center">
+            <div class="g-recaptcha" data-sitekey="6Lfgu14qAAAAAFoP7VqTrjb_-Yxpg5hLR4Pa6-BK"></div>
+          </div>
+          <button type="submit" :disabled="isVerifying" class="btn btn-primary w-100">Iniciar Sesión</button>
+        </form>
 
-      
-      <div class="g-recaptcha" data-sitekey="6Lfgu14qAAAAAFoP7VqTrjb_-Yxpg5hLR4Pa6-BK"></div>
+        <form v-if="isVerifying" @submit.prevent="verifyCode" class="shadow p-4 rounded bg-light mt-4">
+          <div class="form-group mb-3">
+            <label for="verificationCode" class="form-label">Código de Verificación</label>
+            <input type="text" id="verificationCode" v-model="verificationCode" class="form-control input-field" required />
+          </div>
+          <button type="submit" class="btn btn-success w-100">Verificar Código</button>
+        </form>
 
-      <button type="submit" :disabled="isVerifying">Iniciar Sesión</button>
-
-    </form>
-
-    <form v-if="isVerifying" @submit.prevent="verifyCode">
-      <label for="verificationCode">Código de Verificación</label>
-      <input type="text" id="verificationCode" v-model="verificationCode" required />
-
-      <button type="submit">Verificar Código</button>
-    </form>
-
-    <p v-if="errorMessage" style="color: red;">{{ errorMessage }}</p>
+        <p v-if="errorMessage" class="text-danger text-center mt-3">{{ errorMessage }}</p>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -128,5 +134,82 @@ export default {
 </script>
 
 <style>
+.container {
+  max-width: 400px; /* Limitar el ancho máximo del contenedor */
+  margin: auto; /* Centrar el contenedor */
+  background-color: #f7f7f7; /* Color de fondo suave */
+  padding: 20px; /* Espacio interior */
+  border-radius: 8px; /* Bordes redondeados */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Sombra suave */
+}
+
+h1 {
+  color: #333; /* Color del título */
+}
+
+.shadow {
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Agregar sombra suave */
+}
+
+.bg-light {
+  background-color: #ffffff !important; /* Fondo blanco para formularios */
+}
+
+.form-group {
+  margin-bottom: 1.5rem; /* Espaciado entre campos */
+}
+
+.input-field {
+  border: 1px solid #ced4da; /* Borde claro */
+  border-radius: 5px; /* Bordes redondeados */
+  padding: 10px; /* Espacio interior */
+  transition: border-color 0.3s; /* Transición suave para el borde */
+  max-width: 100%; /* Asegura que el campo no exceda el ancho del contenedor */
+  width: calc(100% - 20px); /* Asegura que haya espacio a los lados */
+  margin: 0 auto; /* Centra el campo */
+}
+
+.input-field:focus {
+  border-color: #007bff; /* Color del borde al enfocarse */
+  outline: none; /* Sin borde de enfoque */
+}
+
+.text-danger {
+  color: red; /* Color rojo para mensajes de error */
+}
+
+.btn {
+  background-color: #09c30f; /* Color de fondo del botón */
+  color: white; /* Color del texto del botón */
+  border: none; /* Sin borde */
+  padding: 10px; /* Espaciado interior */
+  border-radius: 4px; /* Bordes redondeados */
+  cursor: pointer; /* Cambiar cursor al pasar sobre el botón */
+  transition: background-color 0.3s ease; /* Transición suave */
+}
+
+.btn:hover {
+  background-color: #09c30f; /* Color de fondo del botón al pasar el mouse */
+}
+
+form {
+  padding: 20px; /* Agregar espacio interno al cuadro */
+  margin-bottom: 20px; /* Agregar espacio inferior entre cuadros */
+}
+
+input {
+  width: 100%;
+  padding: 10px; /* Espacio interno en el campo de entrada */
+  margin-bottom: 15px; /* Espacio inferior entre campos */
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Ajustar el padding del cuadro de verificación si es necesario */
+.g-recaptcha {
+  margin: 20px 0; /* Margen arriba y abajo del reCAPTCHA */
+  display: flex;
+  justify-content: center; /* Centrar el reCAPTCHA */
+}
 
 </style>

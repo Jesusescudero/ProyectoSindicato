@@ -10,15 +10,18 @@
     <main>
       <router-view />
     </main>
-    <footer>
-      <p>&copy; 2024 Proyecto del Sindicato. Todos los derechos reservados.</p>
-    </footer>
+    <FooterComponent /> <!-- Cambia aquí el nombre del componente -->
   </div>
 </template>
 
 <script>
+import FooterComponent from './components/FooterComponent.vue'; // Cambia aquí el nombre
+
 export default {
   name: 'App',
+  components: {
+    FooterComponent, // Cambia aquí el nombre
+  },
 }
 </script>
 
@@ -48,11 +51,5 @@ nav a {
 
 nav a:hover {
   text-decoration: underline;
-}
-
-footer {
-  margin-top: 20px;
-  font-size: 0.8em;
-  color: #777;
 }
 </style>
