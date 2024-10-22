@@ -269,7 +269,7 @@ export default {
                     password: this.password,
                     
                 });
-                const response = await axios.post('http://localhost:3000/register', {
+                const response = await axios.post('https://proyectosin.onrender.com/register', {
                     nombre: this.firstName,
                     apellidoPaterno: this.lastName,
                     apellidoMaterno: this.motherLastName,

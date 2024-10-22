@@ -13,7 +13,7 @@
             <input type="password" id="password" v-model="password" class="form-control input-field" required />
           </div>
           <div class="mb-3 text-center">
-            <div class="g-recaptcha" data-sitekey="6Lfgu14qAAAAAFoP7VqTrjb_-Yxpg5hLR4Pa6-BK"></div>
+            <div class="g-recaptcha" data-sitekey="6LdkUWIqAAAAAL7LRBLA0SpRVLgAUs7KRwAuZRDf"></div>
           </div>
           <button type="submit" :disabled="isVerifying" class="btn btn-primary w-100">Iniciar Sesión</button>
         </form>
@@ -66,7 +66,7 @@ export default {
         }
 
         // Hacer la solicitud de inicio de sesión con credenciales (cookies)
-        const response = await axios.post('http://localhost:3000/login', {
+        const response = await axios.post('https://proyectosin.onrender.com/login', {
           usuarios: this.username,
           password: this.password,
           recaptchaToken: recaptchaToken,
@@ -97,7 +97,7 @@ export default {
   console.log('Código de verificación:', this.verificationCode);
   
   try {
-    const response = await axios.post('http://localhost:3000/verify-code', {
+    const response = await axios.post('https://proyectosin.onrender.com/verify-code', {
       usuarios: this.username,
       codigoVerificacion: this.verificationCode,
     });

@@ -10,32 +10,45 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const sessionId = crypto.randomBytes(16).toString('hex');  // 128 bits
 const session = require('express-session');
-
-
+const cookieParser = require('cookie-parser');
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser()); // Habilita el middleware para parsear las cookies
 
 app.use(cors({
-  origin: 'http://localhost:8080', // Cambia esto por el origen de tu frontend
+  origin: ['http://localhost:8080', 'https://sututeh.isoftuthh.com'], // Agrega tu dominio de producción
   credentials: true // Permite el uso de cookies
 }));
 
-const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '',
-  database: 'proyectosindicato'
+const pool = mysql.createPool({
+  host: '193.203.166.102',
+  user: 'u666156220_Sindicato',
+  password: 'Jesusisrael120@#',
+  database: 'u666156220_Proyectosin',
+  waitForConnections: true,
+  port: 3306,
+  connectionLimit: 10, // Número máximo de conexiones en el pool
+  queueLimit: 0 // Número máximo de consultas en la cola (0 = sin límite)
 });
 
-// Conectar a la base de datos
-db.connect((err) => {
+
+// Cuando necesites realizar una query
+pool.getConnection((err, connection) => {
   if (err) {
-    console.error('Error conectando a MySQL:', err);
+    console.error('Error al obtener la conexión del pool:', err);
     return;
   }
-  console.log('Conectado a MySQL');
+
+  console.log('Conexión al pool de MySQL establecida');
+
+  // Libera la conexión después de usarla
+  connection.release();
 });
+
+
+// Exportar el pool para usarlo en otras partes de tu aplicación
+module.exports = pool;
 
 // Objeto para almacenar intentos de inicio de sesión
 const intentosLogin = {};
@@ -54,23 +67,32 @@ app.use(session({
 }));
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail', // O el servicio de tu elección
+  service: 'Gmail',
   auth: {
     user: '20221042@uthh.edu.mx',
     pass: 'izbq sext sumd xkcu',
   },
 });
 
+
 async function enviarCodigoVerificacion(correo, codigo) {
   const mailOptions = {
-    from: '20221042@uthh.edu.mx',
+    from: '20221042@uthh.edu.mx',  // Asegúrate de usar la dirección correcta
     to: correo,
     subject: 'Código de verificación',
     text: `Tu código de verificación es: ${codigo}`,
   };
 
-  return transporter.sendMail(mailOptions);
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Correo enviado: ', info.response);
+    return { success: true, message: 'Código de verificación enviado', info };
+  } catch (error) {
+    console.error('Error al enviar el correo: ', error);
+    return { success: false, message: 'Error al enviar el correo de verificación', error };
+  }
 }
+
 
 app.use((req, res, next) => {
   console.log('Cookies: ', req.cookies);
@@ -133,7 +155,7 @@ app.post('/register', async (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
 
-    db.query(sql, [
+    pool.query(sql, [
       nombre, apellidoPaterno, apellidoMaterno, telefono, correo, puesto,
       tieneMaestria, nombreMaestria, tieneDoctorado, nombreDoctorado, estatus,
       numeroTrabajador, numeroSindicalizado, usuarios, hash
@@ -155,7 +177,7 @@ app.post('/login', (req, res) => {
   const { usuarios, password, recaptchaToken } = req.body;
 
   // Verificar el token reCAPTCHA con Google
-  const secretKey = '6Lfgu14qAAAAALXwGe_wlKoyN3dc7HT1pU-RRWl7'; // Reemplazar con tu clave secreta de reCAPTCHA
+  const secretKey = '6LdkUWIqAAAAALb-T3v7NgI8esXjmpdwns3jG729'; // Reemplazar con tu clave secreta de reCAPTCHA
   const verificationUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaToken}`;
 
   axios.post(verificationUrl)
@@ -166,7 +188,7 @@ app.post('/login', (req, res) => {
 
       // Si reCAPTCHA es válido, continuar con el proceso de inicio de sesión
       const sql = 'SELECT * FROM users WHERE usuarios = ?';
-      db.query(sql, [usuarios], (err, results) => {
+      pool.query(sql, [usuarios], (err, results) => {
         if (err || results.length === 0) {
           return res.status(400).send('Usuario no encontrado');
         }
@@ -192,7 +214,7 @@ app.post('/login', (req, res) => {
 
             // Actualizar los intentos fallidos y el estado de bloqueo
             const sqlUpdate = 'UPDATE users SET intentosFallidos = ?, bloqueadoHasta = ? WHERE usuarios = ?';
-            db.query(sqlUpdate, [intentosFallidos, bloqueadoHasta, usuarios], (err) => {
+            pool.query(sqlUpdate, [intentosFallidos, bloqueadoHasta, usuarios], (err) => {
               if (err) {
                 return res.status(500).send('Error al actualizar los intentos fallidos.');
               }
@@ -201,7 +223,7 @@ app.post('/login', (req, res) => {
           } else {
             // Reiniciar intentos fallidos y bloqueos si la contraseña es correcta
             const sqlReset = 'UPDATE users SET intentosFallidos = 0, bloqueadoHasta = NULL WHERE usuarios = ?';
-            db.query(sqlReset, [usuarios], (err) => {
+            pool.query(sqlReset, [usuarios], (err) => {
               if (err) {
                 return res.status(500).send('Error al reiniciar los intentos fallidos.');
               }
@@ -217,44 +239,28 @@ app.post('/login', (req, res) => {
                 req.session.userId = user.id; // Almacena el ID del usuario
                 req.session.username = user.usuarios; // Almacena el nombre de usuario
 
-
-
                 // Generar el código de verificación
                 const codigoVerificacion = Math.floor(100000 + Math.random() * 900000);
                 const expiracion = new Date(Date.now() + 5 * 60 * 1000);
 
                 // Actualiza la base de datos con el código y la expiración
                 const sqlUpdate = 'UPDATE users SET codigo_verificacion = ?, codigo_expiracion = ? WHERE usuarios = ?';
-                db.query(sqlUpdate, [codigoVerificacion, expiracion, usuarios], (err) => {
+                pool.query(sqlUpdate, [codigoVerificacion, expiracion, usuarios], async (err) => {
                   if (err) {
                     return res.status(500).send('Error al actualizar el código de verificación.');
                   }
 
-                  // Enviar el código de verificación por correo
-                  const mailOptions = {
-                    from: '20221042@uthh.edu.mx',
-                    to: user.correo, // Correo del usuario
-                    subject: 'Código de verificación',
-                    text: `Tu código de verificación es: ${codigoVerificacion}`
-                  };
+                  // Llama a la función enviarCodigoVerificacion
+                  const result = await enviarCodigoVerificacion(user.correo, codigoVerificacion);
 
-                  transporter.sendMail(mailOptions, (error, info) => {
-                    if (error) {
-                      console.error('Error al enviar el correo:', error);
-                      return res.status(500).send('Error al enviar el correo de verificación.');
-                    }
-
-
-                  });
-
-
-
+                  if (!result.success) {
+                    return res.status(500).send(result.message);
+                  }
 
                   // Establecer el tiempo de expiración de la sesión
                   req.session.cookie.expires = new Date(Date.now() + 30 * 60 * 1000);  // 30 minutos
                   req.session.cookie.maxAge = 30 * 60 * 1000;  // Sesiones basadas en actividad
 
-                  //Aqui hiban los tokens
                   // Generar el token JWT
                   const token = jwt.sign({ id: user.id, usuarios: user.usuarios }, process.env.JWT_SECRET || 'mi_secreto', {
                     expiresIn: '1h'
@@ -288,13 +294,30 @@ app.post('/login', (req, res) => {
 app.get('/session-info', (req, res) => {
   res.json(req.session);
 });
+app.get('/check-session', (req, res) => {
+  if (req.session && req.session.userId) {
+    return res.status(200).json({ loggedIn: true, userId: req.session.userId });
+  }
+  return res.status(200).json({ loggedIn: false });
+});
 
+
+// Ruta para cerrar sesión
+app.post('/logout', (req, res) => {
+  req.session.destroy(err => {
+    if (err) {
+      return res.status(500).send('Error al cerrar sesión');
+    }
+    res.clearCookie('token'); // Limpiar la cookie del token
+    res.status(200).send('Sesión cerrada con éxito');
+  });
+});
 // Ruta para verificar el código de verificación
 app.post('/verify-code', (req, res) => {
   const { usuarios, codigoVerificacion } = req.body;
 
   const sql = 'SELECT codigo_verificacion, codigo_expiracion FROM users WHERE usuarios = ?';
-  db.query(sql, [usuarios], (err, results) => {
+  pool.query(sql, [usuarios], (err, results) => {
     if (err) {
       return res.status(500).send('Error en la consulta de la base de datos.');
     }
@@ -325,7 +348,7 @@ app.put('/change-password', (req, res) => {
   const { oldPassword, newPassword, usuarios } = req.body;
 
   const sql = 'SELECT * FROM users WHERE usuarios = ?';
-  db.query(sql, [usuarios], (err, results) => {
+  pool.query(sql, [usuarios], (err, results) => {
     if (err || results.length === 0) {
       return res.status(400).send('Usuario no encontrado');
     }
@@ -343,7 +366,7 @@ app.put('/change-password', (req, res) => {
         if (err) return res.status(500).send('Error al encriptar la nueva contraseña');
 
         const updateSql = 'UPDATE users SET password = ? WHERE usuarios = ?';
-        db.query(updateSql, [hash, usuarios], (err, result) => {
+        pool.query(updateSql, [hash, usuarios], (err, result) => {
           if (err) {
             return res.status(500).send('Error al actualizar la contraseña');
           }
