@@ -120,8 +120,54 @@ app.post('/register', async (req, res) => {
     password,
   } = req.body;
 
+  // Validar campos requeridos
   if (!usuarios || !password || !nombre || !apellidoPaterno || !apellidoMaterno || !telefono || !correo || !puesto) {
     return res.status(400).send('Todos los campos son requeridos.');
+  }
+
+  // Validaciones específicas
+  // 1. Validar nombre (debe ser alfabético y tener una longitud razonable)
+  if (!/^[a-zA-Z\s]+$/.test(nombre) || nombre.length < 2 || nombre.length > 50) {
+    return res.status(400).send('Nombre inválido. Debe contener solo letras y tener entre 2 y 50 caracteres.');
+  }
+
+  // 2. Validar apellidos (similares al nombre)
+  if (!/^[a-zA-Z\s]+$/.test(apellidoPaterno) || apellidoPaterno.length < 2 || apellidoPaterno.length > 50) {
+    return res.status(400).send('Apellido paterno inválido. Debe contener solo letras y tener entre 2 y 50 caracteres.');
+  }
+
+  if (!/^[a-zA-Z\s]*$/.test(apellidoMaterno) || apellidoMaterno.length > 50) {
+    return res.status(400).send('Apellido materno inválido. Debe contener solo letras y tener hasta 50 caracteres.');
+  }
+
+  // 3. Validar teléfono (asegúrate de que sea un número y tenga una longitud específica)
+  if (!/^\d{10}$/.test(telefono)) {
+    return res.status(400).send('Teléfono inválido. Debe ser un número de 10 dígitos.');
+  }
+
+  // 4. Validar correo (puedes usar una expresión regular básica)
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+    return res.status(400).send('Correo electrónico inválido.');
+  }
+
+  // 5. Validar puesto (longitud y caracteres permitidos)
+  if (!/^[a-zA-Z\s]+$/.test(puesto) || puesto.length < 2 || puesto.length > 100) {
+    return res.status(400).send('Puesto inválido. Debe contener solo letras y tener entre 2 y 100 caracteres.');
+  }
+
+  // 6. Validar estatus (si es un valor específico, como "titulado" o "pasante")
+  const validEstatus = ['Titulado', 'Pasante'];
+  if (!validEstatus.includes(estatus)) {
+    return res.status(400).send(`Estatus inválido. Debe ser uno de los siguientes: ${validEstatus.join(', ')}`);
+  }
+
+  // 7. Validar el número de trabajador y sindicalizado (números, longitud específica)
+  if (!/^\d+$/.test(numeroTrabajador) || numeroTrabajador.length < 1 || numeroTrabajador.length > 20) {
+    return res.status(400).send('Número de trabajador inválido. Debe ser un número.');
+  }
+
+  if (!/^\d+$/.test(numeroSindicalizado) || numeroSindicalizado.length < 1 || numeroSindicalizado.length > 20) {
+    return res.status(400).send('Número de sindicalizado inválido. Debe ser un número.');
   }
 
   // Validaciones de entrada

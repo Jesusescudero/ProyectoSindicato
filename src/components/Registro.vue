@@ -128,20 +128,78 @@ export default {
         
    
         nextStep() {
-            if (this.step === 1) {
-                if (this.firstName && this.lastName && this.motherLastName && this.phoneNumber && this.email) {
-                    this.step++;
-                } else {
-                    alert('Por favor, completa todos los campos en esta sección.');
-                }
-            } else if (this.step === 2) {
-                if (this.position && this.hasMaster && this.isGraduated && this.employeeNumber && this.unionNumber) {
-                    this.step++;
-                } else {
-                    alert('Por favor, completa todos los campos en esta sección.');
-                }
+        if (this.step === 1) {
+            if (this.validateStep1()) {
+                this.step++;
             }
-        },
+        } else if (this.step === 2) {
+            if (this.validateStep2()) {
+                this.step++;
+            }
+        }
+    },
+    
+    // Validaciones del primer paso
+    validateStep1() {
+        // Validar nombre
+        if (!/^[a-zA-Z\s]+$/.test(this.firstName) || this.firstName.length < 2 || this.firstName.length > 50) {
+            alert('Nombre inválido. Debe contener solo letras y tener entre 2 y 50 caracteres.');
+            return false;
+        }
+
+        // Validar apellido paterno
+        if (!/^[a-zA-Z\s]+$/.test(this.lastName) || this.lastName.length < 2 || this.lastName.length > 50) {
+            alert('Apellido paterno inválido. Debe contener solo letras y tener entre 2 y 50 caracteres.');
+            return false;
+        }
+
+        // Validar apellido materno (opcional)
+        if (!/^[a-zA-Z\s]*$/.test(this.motherLastName) || this.motherLastName.length > 50) {
+            alert('Apellido materno inválido. Debe contener solo letras y tener hasta 50 caracteres.');
+            return false;
+        }
+
+        // Validar teléfono
+        if (!/^\d{10}$/.test(this.phoneNumber)) {
+            alert('Teléfono inválido. Debe ser un número de 10 dígitos.');
+            return false;
+        }
+
+        // Validar correo electrónico
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email)) {
+            alert('Correo electrónico inválido.');
+            return false;
+        }
+
+        return true; // Si todas las validaciones pasan
+    },
+    // Validaciones del segundo paso
+    validateStep2() {
+        // Validar puesto
+        if (!/^[a-zA-Z\s]+$/.test(this.position) || this.position.length < 2 || this.position.length > 100) {
+            alert('Puesto inválido. Debe contener solo letras y tener entre 2 y 100 caracteres.');
+            return false;
+        }
+        // Validar si está titulado o es pasante
+    if (this.isGraduated !== 'Titulado' && this.isGraduated !== 'Pasante') {
+        alert('Debe seleccionar si está titulado o es pasante.');
+        return false;
+    }
+
+        // Validar número de trabajador
+        if (!/^\d+$/.test(this.employeeNumber) || this.employeeNumber.length < 1 || this.employeeNumber.length > 20) {
+            alert('Número de trabajador inválido. Debe ser un número.');
+            return false;
+        }
+
+        // Validar número de sindicalizado
+        if (!/^\d+$/.test(this.unionNumber) || this.unionNumber.length < 1 || this.unionNumber.length > 20) {
+            alert('Número de sindicalizado inválido. Debe ser un número.');
+            return false;
+        }
+
+        return true; // Si todas las validaciones pasan
+    },
 
         evaluatePassword() {
             const password = this.password;
