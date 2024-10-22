@@ -4,29 +4,37 @@
 
         <form @submit.prevent="handleSubmit" class="registration-form">
             <div v-if="step === 1">
-                <h2>Datos Personales</h2>
                 <label for="firstName">Nombre</label>
-                <input type="text" id="firstName" v-model="firstName" required />
+            <input type="text" id="firstName" v-model="firstName" required />
+            <p v-if="firstNameError" class="error-message">{{ firstNameError }}</p>
 
-                <label for="lastName">Apellido Paterno</label>
-                <input type="text" id="lastName" v-model="lastName" required />
+            <label for="lastName">Apellido Paterno</label>
+            <input type="text" id="lastName" v-model="lastName" required />
+            <p v-if="lastNameError" class="error-message">{{ lastNameError }}</p>
 
-                <label for="motherLastName">Apellido Materno</label>
-                <input type="text" id="motherLastName" v-model="motherLastName" required />
+            <label for="motherLastName">Apellido Materno</label>
+            <input type="text" id="motherLastName" v-model="motherLastName" required />
+            <p v-if="motherLastNameError" class="error-message">{{ motherLastNameError }}</p>
 
-                <label for="phoneNumber">Número de Teléfono</label>
-                <input type="tel" id="phoneNumber" v-model="phoneNumber" required />
+            <label for="phoneNumber">Número de Teléfono</label>
+            <input type="tel" id="phoneNumber" v-model="phoneNumber" required />
+            <p v-if="phoneNumberError" class="error-message">{{ phoneNumberError }}</p>
 
-                <label for="email">Correo Electrónico</label>
-                <input type="email" id="email" v-model="email" required />
+            <label for="email">Correo Electrónico</label>
+            <input type="email" id="email" v-model="email" required />
+            <p v-if="emailError" class="error-message">{{ emailError }}</p>
 
-                <button type="button" class="btn btn-primary" @click="nextStep">Siguiente</button>
+            <button type="button" class="btn btn-primary" @click="nextStep">Siguiente</button>
             </div>
+            
+
 
             <div v-if="step === 2">
                 <h2>Información Académica</h2>
+
                 <label for="position">Puesto</label>
                 <input type="text" id="position" v-model="position" required />
+                <p v-if="positionError" class="error-message">{{ positionError }}</p>
 
                 <label for="hasMaster">¿Tiene Maestría?</label>
                 <select id="hasMaster" v-model="hasMaster" required>
@@ -51,15 +59,19 @@
                     <option value="Titulado">Titulado</option>
                     <option value="Pasante">Pasante</option>
                 </select>
+                <p v-if="graduationError" class="error-message">{{ graduationError }}</p>
 
                 <label for="employeeNumber">Número de Trabajador</label>
                 <input type="text" id="employeeNumber" v-model="employeeNumber" required />
+                <p v-if="employeeNumberError" class="error-message">{{ employeeNumberError }}</p>
 
                 <label for="unionNumber">Número de Sindicalizado</label>
                 <input type="text" id="unionNumber" v-model="unionNumber" required />
+                <p v-if="unionNumberError" class="error-message">{{ unionNumberError }}</p>
 
                 <button type="button" class="btn btn-primary" @click="nextStep">Siguiente</button>
             </div>
+
 
             <div v-if="step === 3">
                 <h2>Credenciales de Acceso</h2>
@@ -120,86 +132,106 @@ export default {
             isPasswordStrong: false,
             passwordsMatch: true,
             passwordMismatchMessage: '',
+            
+            firstNameError: '',
+            lastNameError: '',
+            motherLastNameError: '',
+            phoneNumberError: '',
+            emailError: '',
+            positionError: '',
+            graduationError: '',
+            employeeNumberError: '',
+            unionNumberError: '',
             step: 1,
         };
     },
-   
+
     methods: {
-        
-   
+
+
         nextStep() {
-        if (this.step === 1) {
-            if (this.validateStep1()) {
-                this.step++;
+            if (this.step === 1) {
+                if (this.validateStep1()) {
+                    this.step++;
+                }
+            } else if (this.step === 2) {
+                if (this.validateStep2()) {
+                    this.step++;
+                }
             }
-        } else if (this.step === 2) {
-            if (this.validateStep2()) {
-                this.step++;
+        },
+
+        // Validaciones del primer paso
+        validateStep1() {
+            // Resetear errores
+            this.firstNameError = '';
+            this.lastNameError = '';
+            this.motherLastNameError = '';
+            this.phoneNumberError = '';
+            this.emailError = '';
+
+            // Validar nombre
+            if (!/^[a-zA-Z\s]+$/.test(this.firstName) || this.firstName.length < 2 || this.firstName.length > 50) {
+                this.firstNameError = 'Nombre inválido. Debe contener solo letras y tener entre 2 y 50 caracteres.';
+                return false;
             }
-        }
-    },
-    
-    // Validaciones del primer paso
-    validateStep1() {
-        // Validar nombre
-        if (!/^[a-zA-Z\s]+$/.test(this.firstName) || this.firstName.length < 2 || this.firstName.length > 50) {
-            alert('Nombre inválido. Debe contener solo letras y tener entre 2 y 50 caracteres.');
-            return false;
-        }
 
-        // Validar apellido paterno
-        if (!/^[a-zA-Z\s]+$/.test(this.lastName) || this.lastName.length < 2 || this.lastName.length > 50) {
-            alert('Apellido paterno inválido. Debe contener solo letras y tener entre 2 y 50 caracteres.');
-            return false;
-        }
+            // Validar apellido paterno
+            if (!/^[a-zA-Z\s]+$/.test(this.lastName) || this.lastName.length < 2 || this.lastName.length > 50) {
+                this.lastNameError = 'Apellido paterno inválido. Debe contener solo letras y tener entre 2 y 50 caracteres.';
+                return false;
+            }
 
-        // Validar apellido materno (opcional)
-        if (!/^[a-zA-Z\s]*$/.test(this.motherLastName) || this.motherLastName.length > 50) {
-            alert('Apellido materno inválido. Debe contener solo letras y tener hasta 50 caracteres.');
-            return false;
-        }
+            // Validar apellido materno (opcional)
+            if (!/^[a-zA-Z\s]*$/.test(this.motherLastName) || this.motherLastName.length > 50) {
+                this.motherLastNameError = 'Apellido materno inválido. Debe contener solo letras y tener hasta 50 caracteres.';
+                return false;
+            }
 
-        // Validar teléfono
-        if (!/^\d{10}$/.test(this.phoneNumber)) {
-            alert('Teléfono inválido. Debe ser un número de 10 dígitos.');
-            return false;
-        }
+            // Validar teléfono
+            if (!/^\d{10}$/.test(this.phoneNumber)) {
+                this.phoneNumberError = 'Teléfono inválido. Debe ser un número de 10 dígitos.';
+                return false;
+            }
 
-        // Validar correo electrónico
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email)) {
-            alert('Correo electrónico inválido.');
-            return false;
-        }
+            // Validar correo electrónico
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email)) {
+                this.emailError = 'Correo electrónico inválido.';
+                return false;
+            }
 
-        return true; // Si todas las validaciones pasan
-    },
-    // Validaciones del segundo paso
-    validateStep2() {
-        // Validar puesto
-        if (!/^[a-zA-Z\s]+$/.test(this.position) || this.position.length < 2 || this.position.length > 100) {
-            alert('Puesto inválido. Debe contener solo letras y tener entre 2 y 100 caracteres.');
-            return false;
-        }
-        // Validar si está titulado o es pasante
-    if (this.isGraduated !== 'Titulado' && this.isGraduated !== 'Pasante') {
-        alert('Debe seleccionar si está titulado o es pasante.');
-        return false;
-    }
+            return true; // Si todas las validaciones pasan
+        },
 
-        // Validar número de trabajador
-        if (!/^\d+$/.test(this.employeeNumber) || this.employeeNumber.length < 1 || this.employeeNumber.length > 20) {
-            alert('Número de trabajador inválido. Debe ser un número.');
-            return false;
-        }
+        // Validaciones del segundo paso
+        validateStep2() {
+            // Validar puesto
+            if (!/^[a-zA-Z\s]+$/.test(this.position) || this.position.length < 2 || this.position.length > 100) {
+                alert('Puesto inválido. Debe contener solo letras y tener entre 2 y 100 caracteres.');
+                return false;
+            }
 
-        // Validar número de sindicalizado
-        if (!/^\d+$/.test(this.unionNumber) || this.unionNumber.length < 1 || this.unionNumber.length > 20) {
-            alert('Número de sindicalizado inválido. Debe ser un número.');
-            return false;
-        }
+            // Validar si está titulado o es pasante
+            if (this.isGraduated !== 'Titulado' && this.isGraduated !== 'Pasante') {
+                alert('Debe seleccionar si está titulado o es pasante.');
+                return false;
+            }
 
-        return true; // Si todas las validaciones pasan
-    },
+            // Validar número de trabajador
+            if (!/^\d+$/.test(this.employeeNumber) || this.employeeNumber.length < 1 || this.employeeNumber.length > 20) {
+                alert('Número de trabajador inválido. Debe ser un número.');
+                return false;
+            }
+
+            // Validar número de sindicalizado
+            if (!/^\d+$/.test(this.unionNumber) || this.unionNumber.length < 1 || this.unionNumber.length > 20) {
+                alert('Número de sindicalizado inválido. Debe ser un número.');
+                return false;
+            }
+
+            return true; // Si todas las validaciones pasan
+        },
+
 
         evaluatePassword() {
             const password = this.password;
@@ -301,7 +333,7 @@ export default {
             }
         },
 
-        
+
         async registerUser() {
             const isPasswordValid = await this.validatePassword();
             if (!isPasswordValid) {
@@ -325,7 +357,7 @@ export default {
                     numeroSindicalizado: this.unionNumber,
                     usuarios: this.username,
                     password: this.password,
-                    
+
                 });
                 const response = await axios.post('https://proyectosin.onrender.com/register', {
                     nombre: this.firstName,
@@ -343,7 +375,7 @@ export default {
                     numeroSindicalizado: this.unionNumber,
                     usuarios: this.username,
                     password: this.password,
-                    
+
                 });
                 console.log(response.data);
 
@@ -381,7 +413,7 @@ export default {
             }
 
             // Llamar a la función para registrar el usuario
-        await this.registerUser();
+            await this.registerUser();
         },
 
         resetForm() {
@@ -431,6 +463,4 @@ export default {
 .success-message {
     color: green;
 }
-
-
 </style>
