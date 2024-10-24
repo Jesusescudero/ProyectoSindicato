@@ -70,8 +70,8 @@ app.use(session({
   saveUninitialized: true,
   cookie: {
     httpOnly: true,       // Las cookies no serán accesibles desde JavaScript del cliente
-    secure: false, // Solo true en producción (HTTPS)
-    sameSite: 'Lax',      // Evita CSRF sin impedir envíos desde el mismo sitio
+    secure: process.env.NODE_ENV === 'production', // Solo true en producción (HTTPS)
+    sameSite: 'None',      // O 'None' si haces solicitudes entre dominios
     maxAge: 30 * 60 * 1000 // Duración de la sesión: 30 minutos
   }
 }));
@@ -461,7 +461,7 @@ app.post('/recover-password', (req, res) => {
         from: '20221042@uthh.edu.mx',
         to: email,
         subject: 'Recuperación de Contraseña',
-        text: `Haz clic en el siguiente enlace para restablecer tu contraseña: http://localhost:8080/new-password?token=${token}`,
+        text: `Haz clic en el siguiente enlace para restablecer tu contraseña: https://sututeh.isoftuthh.com/new-password?token=${token}`,
       };
 
       transporter.sendMail(mailOptions, (err, info) => {

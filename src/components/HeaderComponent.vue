@@ -1,6 +1,6 @@
 <template>
   <header>
-    <h1>Sindicato</h1>
+    <h1>SUTUTEH</h1>
     <nav>
       <router-link to="/">Inicio</router-link>
       <router-link to="/login">Iniciar Sesión</router-link>
@@ -26,7 +26,7 @@ export default {
   methods: {
     async logout() {
       try {
-        const response = await fetch('http://localhost:3000/logout', {
+        const response = await fetch('https://proyectosin.onrender.com/logout', {
           method: 'POST',
         credentials: 'include', // Incluye las cookies de sesión
       });
@@ -36,16 +36,15 @@ export default {
       }
 
       // Eliminar el token del almacenamiento local
-      localStorage.removeItem('token'); 
+      // Eliminar el token del almacenamiento local o de las cookies
+    localStorage.removeItem('token'); 
+    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 
-      // (Opcional) Si estás utilizando cookies de sesión, no es necesario que hagas nada aquí, ya que se deberían eliminar automáticamente en el backend.
-      // Si es necesario, puedes manejar la eliminación de cookies aquí también.
+    // Actualizar el estado de autenticación
+    this.isAuthenticated = false;
 
-      // Actualizar el estado de autenticación
-      this.isAuthenticated = false; 
-
-      alert('Sesión cerrada con éxito');
-      this.$router.push('/'); // Redirigir a la página de inicio
+    alert('Sesión cerrada con éxito');
+    this.$router.push('/'); // Redirigir a la página de inicio
     } catch (error) {
       console.error(error);
       alert('Ocurrió un problema al cerrar sesión. Por favor, inténtalo de nuevo.');
@@ -57,7 +56,7 @@ export default {
 
 <style scoped>
 header {
-  background-color: #3b8cff;
+  background-color: #049206;
   color: white;
   padding: 20px;
 }

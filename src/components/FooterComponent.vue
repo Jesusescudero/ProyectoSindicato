@@ -14,8 +14,9 @@ export default {
 </script>
 
 <style scoped>
+
 .footer {
-  background-color: #1fda22; /* Color de fondo */
+  background-color: #049206; /* Color de fondo */
   color: white; /* Color del texto */
   padding: 20px; /* Espaciado interior */
   text-align: center; /* Centrar texto */
@@ -33,4 +34,5 @@ export default {
 .footer p {
   margin: 5px 0; /* Espaciado entre párrafos */
 }
+
 </style>

@@ -72,8 +72,8 @@
   }
   
   .hero {
-    background-color: #0056b3;
-    color: white;
+    
+    color: rgb(17, 13, 13);
     padding: 50px 20px;
     text-align: center;
   }

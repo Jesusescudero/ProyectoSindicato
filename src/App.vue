@@ -1,25 +1,20 @@
 <template>
   <div id="app">
-    <header>
-      <h1>Sindicato</h1>
-      <nav>
-        <router-link to="/login">Iniciar Sesión</router-link>
-        <router-link to="/register">Registrarse</router-link>
-      </nav>
-    </header>
+    <HeaderComponent />
     <main>
       <router-view />
     </main>
     <FooterComponent /> <!-- Cambia aquí el nombre del componente -->
   </div>
 </template>
-
 <script>
 import FooterComponent from './components/FooterComponent.vue'; // Cambia aquí el nombre
+import HeaderComponent from './components/HeaderComponent.vue';
 
 export default {
   name: 'App',
   components: {
+    HeaderComponent,
     FooterComponent, // Cambia aquí el nombre
   },
 }
@@ -30,13 +25,13 @@ export default {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   text-align: center;
   color: #2c3e50;
-  margin-top: 30px;
+  margin-top: 0px;
 }
 
 header {
-  background-color: #3b8cff;
+  background-color: #049206;
   color: white;
-  padding: 20px;
+  padding: 10px;
 }
 
 nav {
@@ -44,7 +39,7 @@ nav {
 }
 
 nav a {
-  margin: 0 15px;
+  margin: 0 10px;
   color: white;
   text-decoration: none;
 }

@@ -1,102 +1,144 @@
 <template>
-    <div class="registration-container">
-        <h1>Registro</h1>
+    <div class="container mt-5">
+        <div class="card shadow-lg p-4 rounded">
+            <h2 class="text-center mb-4">Registro de Usuario</h2>
 
-        <form @submit.prevent="handleSubmit" class="registration-form">
-            <div v-if="step === 1">
-                <label for="firstName">Nombre</label>
-            <input type="text" id="firstName" v-model="firstName" required />
-            <p v-if="firstNameError" class="error-message">{{ firstNameError }}</p>
+            <form @submit.prevent="handleSubmit">
+                <div v-if="step === 1" class="animate__animated animate__fadeIn">
+                    <h4 class="mb-3">Datos Personales</h4>
 
-            <label for="lastName">Apellido Paterno</label>
-            <input type="text" id="lastName" v-model="lastName" required />
-            <p v-if="lastNameError" class="error-message">{{ lastNameError }}</p>
+                    <div class="mb-3">
+                        <label for="firstName" class="form-label">Nombre</label>
+                        <input type="text" id="firstName" v-model="firstName" class="form-control" required />
+                        <p v-if="firstNameError" class="text-danger">{{ firstNameError }}</p>
+                    </div>
 
-            <label for="motherLastName">Apellido Materno</label>
-            <input type="text" id="motherLastName" v-model="motherLastName" required />
-            <p v-if="motherLastNameError" class="error-message">{{ motherLastNameError }}</p>
+                    <div class="mb-3">
+                        <label for="lastName" class="form-label">Apellido Paterno</label>
+                        <input type="text" id="lastName" v-model="lastName" class="form-control" required />
+                        <p v-if="lastNameError" class="text-danger">{{ lastNameError }}</p>
+                    </div>
 
-            <label for="phoneNumber">Número de Teléfono</label>
-            <input type="tel" id="phoneNumber" v-model="phoneNumber" required />
-            <p v-if="phoneNumberError" class="error-message">{{ phoneNumberError }}</p>
+                    <div class="mb-3">
+                        <label for="motherLastName" class="form-label">Apellido Materno</label>
+                        <input type="text" id="motherLastName" v-model="motherLastName" class="form-control" required />
+                        <p v-if="motherLastNameError" class="text-danger">{{ motherLastNameError }}</p>
+                    </div>
 
-            <label for="email">Correo Electrónico</label>
-            <input type="email" id="email" v-model="email" required />
-            <p v-if="emailError" class="error-message">{{ emailError }}</p>
+                    <div class="mb-3">
+                        <label for="phoneNumber" class="form-label">Número de Teléfono</label>
+                        <input type="tel" id="phoneNumber" v-model="phoneNumber" class="form-control" required />
+                        <p v-if="phoneNumberError" class="text-danger">{{ phoneNumberError }}</p>
+                    </div>
 
-            <button type="button" class="btn btn-primary" @click="nextStep">Siguiente</button>
-            </div>
-            
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Correo Electrónico</label>
+                        <input type="email" id="email" v-model="email" class="form-control" required />
+                        <p v-if="emailError" class="text-danger">{{ emailError }}</p>
+                    </div>
 
+                    <button type="button" class="btn btn-primary w-100" @click="nextStep">Siguiente</button>
+                </div>
 
-            <div v-if="step === 2">
-                <h2>Información Académica</h2>
+                <div v-if="step === 2" class="animate__animated animate__fadeIn">
+                    <h4 class="mb-3">Información Académica</h4>
 
-                <label for="position">Puesto</label>
-                <input type="text" id="position" v-model="position" required />
-                <p v-if="positionError" class="error-message">{{ positionError }}</p>
+                    <div class="mb-3">
+                        <label for="position" class="form-label">Puesto</label>
+                        <input type="text" id="position" v-model="position" class="form-control" required />
+                        <p v-if="positionError" class="text-danger">{{ positionError }}</p>
+                    </div>
 
-                <label for="hasMaster">¿Tiene Maestría?</label>
-                <select id="hasMaster" v-model="hasMaster" required>
-                    <option value="no">No</option>
-                    <option value="si">Sí</option>
-                </select>
+                    <div class="mb-3">
+                        <label for="hasMaster" class="form-label">¿Tiene Maestría?</label>
+                        <select id="hasMaster" v-model="hasMaster" class="form-select" required>
+                            <option value="no">No</option>
+                            <option value="si">Sí</option>
+                        </select>
+                    </div>
 
-                <label v-if="hasMaster === 'si'" for="masterName">Nombre de la Maestría</label>
-                <input v-if="hasMaster === 'si'" type="text" id="masterName" v-model="masterName" />
+                    <div v-if="hasMaster === 'si'" class="mb-3">
+                        <label for="masterName" class="form-label">Nombre de la Maestría</label>
+                        <input type="text" id="masterName" v-model="masterName" class="form-control" />
+                    </div>
 
-                <label for="hasDoctorate">¿Tiene Doctorado?</label>
-                <select id="hasDoctorate" v-model="hasDoctorate" required>
-                    <option value="no">No</option>
-                    <option value="si">Sí</option>
-                </select>
+                    <div class="mb-3">
+                        <label for="hasDoctorate" class="form-label">¿Tiene Doctorado?</label>
+                        <select id="hasDoctorate" v-model="hasDoctorate" class="form-select" required>
+                            <option value="no">No</option>
+                            <option value="si">Sí</option>
+                        </select>
+                    </div>
 
-                <label v-if="hasDoctorate === 'si'" for="doctorateName">Nombre del Doctorado</label>
-                <input v-if="hasDoctorate === 'si'" type="text" id="doctorateName" v-model="doctorateName" />
+                    <div v-if="hasDoctorate === 'si'" class="mb-3">
+                        <label for="doctorateName" class="form-label">Nombre del Doctorado</label>
+                        <input type="text" id="doctorateName" v-model="doctorateName" class="form-control" />
+                    </div>
 
-                <label for="isGraduated">¿Está titulado o es pasante?</label>
-                <select id="isGraduated" v-model="isGraduated" required>
-                    <option value="Titulado">Titulado</option>
-                    <option value="Pasante">Pasante</option>
-                </select>
-                <p v-if="graduationError" class="error-message">{{ graduationError }}</p>
+                    <div class="form-group row">
+                        <label for="isGraduated" class="col-sm-4 col-form-label">¿Está titulado o es pasante?</label>
+                        <div class="col-sm-8">
+                            <select id="isGraduated" v-model="isGraduated" class="form-control" required>
+                                <option value="Titulado">Titulado</option>
+                                <option value="Pasante">Pasante</option>
+                            </select>
+                            <p v-if="graduationError" class="text-danger">{{ graduationError }}</p>
+                        </div>
+                    </div>
 
-                <label for="employeeNumber">Número de Trabajador</label>
-                <input type="text" id="employeeNumber" v-model="employeeNumber" required />
-                <p v-if="employeeNumberError" class="error-message">{{ employeeNumberError }}</p>
+                    <div class="form-group">
+                        <label for="employeeNumber">Número de Trabajador</label>
+                        <input type="text" id="employeeNumber" v-model="employeeNumber" class="form-control" required />
+                        <p v-if="employeeNumberError" class="text-danger">{{ employeeNumberError }}</p>
+                    </div>
 
-                <label for="unionNumber">Número de Sindicalizado</label>
-                <input type="text" id="unionNumber" v-model="unionNumber" required />
-                <p v-if="unionNumberError" class="error-message">{{ unionNumberError }}</p>
+                    <div class="form-group">
+                        <label for="unionNumber">Número de Sindicalizado</label>
+                        <input type="text" id="unionNumber" v-model="unionNumber" class="form-control" required />
+                        <p v-if="unionNumberError" class="text-danger">{{ unionNumberError }}</p>
+                    </div>
 
-                <button type="button" class="btn btn-primary" @click="nextStep">Siguiente</button>
-            </div>
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-secondary" @click="previousStep">Anterior</button>
+                        <button type="button" class="btn btn-primary" @click="nextStep">Siguiente</button>
+                    </div>
+                </div>
 
+                <div v-if="step === 3" class="animate__animated animate__fadeIn">
+                    <h4 class="mb-3">Credenciales de Acceso</h4>
 
-            <div v-if="step === 3">
-                <h2>Credenciales de Acceso</h2>
-                <label for="username">Usuario</label>
-                <input type="text" id="username" v-model="username" required />
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Usuario</label>
+                        <input type="text" id="username" v-model="username" class="form-control" required />
+                    </div>
 
-                <label for="password">Contraseña</label>
-                <input type="password" id="password" v-model="password" @input="evaluatePassword" required />
-                <div :style="{ width: passwordStrengthBarWidth }" class="password-strength-bar"></div>
-                <p v-if="passwordStrengthMessage">{{ passwordStrengthMessage }}</p>
-                <p v-if="passwordTooWeakMessage" class="error-message">{{ passwordTooWeakMessage }}</p>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Contraseña</label>
+                        <input type="password" id="password" v-model="password" @input="evaluatePassword" class="form-control" required />
+                        <div :style="{ width: passwordStrengthBarWidth }" class="password-strength-bar mt-2"></div>
+                        <p v-if="passwordStrengthMessage" class="text-info">{{ passwordStrengthMessage }}</p>
+                        <p v-if="passwordTooWeakMessage" class="text-danger">{{ passwordTooWeakMessage }}</p>
+                    </div>
 
-                <label for="confirmPassword">Confirmar Contraseña</label>
-                <input type="password" id="confirmPassword" v-model="confirmPassword" @input="checkPasswordsMatch"
-                    required />
-                <p v-if="passwordMismatchMessage" class="error-message">{{ passwordMismatchMessage }}</p>
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label">Confirmar Contraseña</label>
+                        <input type="password" id="confirmPassword" v-model="confirmPassword" @input="checkPasswordsMatch" class="form-control" required />
+                        <p v-if="passwordMismatchMessage" class="text-danger">{{ passwordMismatchMessage }}</p>
+                    </div>
 
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-secondary" @click="previousStep">Anterior</button>
+                        <button type="submit" class="btn btn-success">Registrar</button>
+                    </div>
+                </div>
+            </form>
 
-                <button type="submit" class="btn btn-success" @click="register">Registrar</button>
-            </div>
-        </form>
-        <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
-        <p v-if="successMessage" class="success-message">{{ successMessage }}</p>
+            <p v-if="errorMessage" class="text-danger text-center mt-3">{{ errorMessage }}</p>
+            <p v-if="successMessage" class="text-success text-center mt-3">{{ successMessage }}</p>
+        </div>
     </div>
 </template>
+
 
 <script>
 
@@ -160,6 +202,11 @@ export default {
                 }
             }
         },
+        previousStep() {
+    if (this.step > 1) {
+      this.step--;
+    }
+  },
 
         // Validaciones del primer paso
         validateStep1() {
@@ -441,26 +488,80 @@ export default {
 
 <style scoped>
 .registration-container {
-    max-width: 600px;
+    max-width: 500px;
     margin: 0 auto;
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
 }
 
-.registration-form {
-    display: flex;
-    flex-direction: column;
+.step-title {
+    text-align: center;
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    color: #333;
+}
+
+.card {
+  animation: fadeIn 1s;
+}
+.btn {
+    padding: 10px 20px;
+    font-size: 16px;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-primary, .btn-secondary, .btn-success {
+    width: 48%; /* Hace que los botones ocupen la mitad del espacio cada uno */
+    text-align: center;
 }
 
 .password-strength-bar {
-    height: 5px;
-    background-color: green;
-    /* Cambia el color según la fuerza */
+  height: 5px;
+  background-color: green;
+}
+
+.animate__fadeIn {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .error-message {
-    color: red;
+  color: red;
+  font-size: 0.9rem;
 }
 
 .success-message {
-    color: green;
+  color: green;
+  font-size: 1rem;
+}
+
+.text-info {
+  font-size: 0.9rem;
 }
 </style>
