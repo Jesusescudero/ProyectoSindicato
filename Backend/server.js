@@ -8,18 +8,28 @@ const { pwnedPassword } = require('hibp');
 const axios = require('axios'); // Importar axios para hacer solicitudes HTTP
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
-const sessionId = crypto.randomBytes(16).toString('hex');  // 128 bits
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const app = express();
 
-app.use(express.json());
-app.use(cookieParser()); // Habilita el middleware para parsear las cookies
 
-app.use(cors({
-  origin: ['http://localhost:8080', 'https://sututeh.isoftuthh.com'], // Agrega tu dominio de producción
-  credentials: true // Permite el uso de cookies
-}));
+// Middleware
+app.use(cookieParser());
+app.use(express.json());
+
+// Configuración de CORS
+const corsOptions = {
+  origin: ['http://localhost:8080', 'https://sututeh.isoftuthh.com'], // Orígenes permitidos
+  methods: ['GET', 'POST', 'OPTIONS'], // Métodos permitidos
+  allowedHeaders: ['Content-Type', 'Authorization'], // Encabezados permitidos
+  credentials: true // Permitir credenciales (cookies)
+};
+
+app.use(cors(corsOptions)); // Aplicar CORS con las opciones definidas
+
+// Manejo de solicitudes preflight (OPTIONS)
+app.options('*', cors(corsOptions)); // Usar CORS para manejar las solicitudes preflight
+
 
 const pool = mysql.createPool({
   host: '193.203.166.102',
@@ -311,14 +321,20 @@ app.post('/login', (req, res) => {
                   const token = jwt.sign({ id: user.id, usuarios: user.usuarios }, process.env.JWT_SECRET || 'mi_secreto', {
                     expiresIn: '1h'
                   });
+                  console.log('Cookies:', req.cookies);
 
+
+                  console.log('Antes de establecer la cookie');
                   // Establecer el token como una cookie segura
                   res.cookie('token', token, {
                     httpOnly: true,       // Solo accesible en el servidor
-                    secure: process.env.NODE_ENV === 'production', // Solo true en producción (HTTPS)
-                    sameSite: 'Lax',      // Prevenir CSRF
+                    secure: process.env.NODE_ENV === 'production', // Cambiar a true en producción (HTTPS)
+                    sameSite: 'None', // Permitir cookies entre diferentes dominios
                     maxAge: 60 * 60 * 1000 // 1 hora de duración
                   });
+                  // Imprimir las cookies justo después de establecerla
+                  console.log('Cookie establecida:', req.cookies);
+                  
                   return res.status(200).json({
                     token,
                     codigoVerificacion,
@@ -350,14 +366,18 @@ app.get('/check-session', (req, res) => {
 
 // Ruta para cerrar sesión
 app.post('/logout', (req, res) => {
+  // Destruir la sesión de connect.sid
   req.session.destroy(err => {
     if (err) {
       return res.status(500).send('Error al cerrar sesión');
     }
-    res.clearCookie('token'); // Limpiar la cookie del token
+
+    // Limpiar la cookie del token JWT
+    res.clearCookie('token'); // Asegúrate de que este nombre coincida con el que usas para el token
     res.status(200).send('Sesión cerrada con éxito');
   });
 });
+
 // Ruta para verificar el código de verificación
 app.post('/verify-code', (req, res) => {
   const { usuarios, codigoVerificacion } = req.body;
@@ -390,34 +410,99 @@ app.post('/verify-code', (req, res) => {
 });
 
 // Ruta para cambiar contraseña
-app.put('/change-password', (req, res) => {
-  const { oldPassword, newPassword, usuarios } = req.body;
+// Ruta para solicitar la recuperación de contraseña
+app.post('/recover-password', (req, res) => {
+  const { email } = req.body;
 
-  const sql = 'SELECT * FROM users WHERE usuarios = ?';
-  pool.query(sql, [usuarios], (err, results) => {
-    if (err || results.length === 0) {
-      return res.status(400).send('Usuario no encontrado');
+  // Buscar al usuario por correo electrónico
+  const userQuery = 'SELECT * FROM users WHERE correo = ?';
+  pool.query(userQuery, [email], (err, result) => {
+    if (err) {
+      console.error('Error en la consulta de base de datos:', err);
+      return res.status(500).json({ message: 'Error en la base de datos' });
     }
 
-    const users = results[0];
+    if (result.length === 0) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
 
-    // Verificar la contraseña actual
-    bcrypt.compare(oldPassword, users.password, (err, isMatch) => {
-      if (!isMatch) {
-        return res.status(400).send('Contraseña actual incorrecta');
+    const user = result[0];
+
+    // Generar un token de restablecimiento
+    const token = crypto.randomBytes(20).toString('hex');
+    const expires = Date.now() + 3600000; // El token expira en 1 hora
+
+    // Guardar el token y su expiración en la base de datos
+    const updateQuery = 'UPDATE users SET reset_token = ?, reset_expires = ? WHERE id = ?';
+    pool.query(updateQuery, [token, expires, user.id], (err, updateResult) => {
+      if (err) {
+        console.error('Error al actualizar el token en la base de datos:', err);
+        return res.status(500).json({ message: 'Error al actualizar el token' });
       }
 
-      // Encriptar la nueva contraseña
-      bcrypt.hash(newPassword, 10, (err, hash) => {
-        if (err) return res.status(500).send('Error al encriptar la nueva contraseña');
+      // Configurar el transporte para nodemailer
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: '20221042@uthh.edu.mx',
+          pass: 'izbq sext sumd xkcu',
+        },
+      });
 
-        const updateSql = 'UPDATE users SET password = ? WHERE usuarios = ?';
-        pool.query(updateSql, [hash, usuarios], (err, result) => {
-          if (err) {
-            return res.status(500).send('Error al actualizar la contraseña');
-          }
-          res.status(200).send('Contraseña cambiada con éxito');
-        });
+      const mailOptions = {
+        from: '20221042@uthh.edu.mx',
+        to: email,
+        subject: 'Recuperación de Contraseña',
+        text: `Haz clic en el siguiente enlace para restablecer tu contraseña: http://localhost:8080/new-password?token=${token}`,
+      };
+
+      // Enviar el correo electrónico
+      transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
+          console.error('Error al enviar el correo:', err);
+          return res.status(500).json({ message: 'Error al enviar el correo' });
+        }
+
+        res.status(200).json({ message: 'Correo de recuperación enviado' });
+      });
+    });
+  });
+});
+
+// Ruta para establecer una nueva contraseña
+app.post('/reset-password', async (req, res) => {
+  const { token, newPassword } = req.body;  // Aquí recibimos el token y la nueva contraseña
+
+  // Verificar que ambos campos estén presentes
+  if (!token || !newPassword) {
+    return res.status(400).send('Token y nueva contraseña son requeridos.');
+  }
+
+  // Verificar el token y que no haya expirado
+  const sql = 'SELECT * FROM users WHERE reset_token = ? AND reset_expires > NOW()';
+  pool.query(sql, [token], (err, results) => {
+    if (err) {
+      console.error('Error en la consulta a la base de datos:', err);
+      return res.status(500).send('Error en la base de datos');
+    }
+
+    if (results.length === 0) {
+      return res.status(400).send('Token inválido o expirado.');
+    }
+
+    // Encriptar la nueva contraseña
+    bcrypt.hash(newPassword, 10, (err, hash) => {
+      if (err) return res.status(500).send('Error al encriptar la contraseña');
+
+      // Actualizar la contraseña y borrar el token y su expiración
+      const updateSql = 'UPDATE users SET password = ?, reset_token = NULL, reset_expires = NULL WHERE id = ?';
+      pool.query(updateSql, [hash, results[0].id], (err) => {
+        if (err) {
+          console.error('Error al actualizar la contraseña:', err);
+          return res.status(500).send('Error al actualizar la contraseña.');
+        }
+
+        res.status(200).send('Contraseña actualizada con éxito.');
       });
     });
   });
