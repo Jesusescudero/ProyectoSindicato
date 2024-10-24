@@ -411,16 +411,13 @@ app.post('/verify-code', (req, res) => {
 
 // Ruta para cambiar contraseña
 // Ruta para solicitar la recuperación de contraseña
-app.post('/recover-password', (req, res) => {
+app.post('/recover-password', async (req, res) => {
   const { email } = req.body;
 
-  // Buscar al usuario por correo electrónico
-  const userQuery = 'SELECT * FROM users WHERE correo = ?';
-  pool.query(userQuery, [email], (err, result) => {
-    if (err) {
-      console.error('Error en la consulta de base de datos:', err);
-      return res.status(500).json({ message: 'Error en la base de datos' });
-    }
+  try {
+    // Buscar al usuario por correo electrónico
+    const userQuery = 'SELECT * FROM users WHERE email = ?'; 
+    const result = await pool.query(userQuery, [email]);
 
     if (result.length === 0) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
@@ -430,44 +427,41 @@ app.post('/recover-password', (req, res) => {
 
     // Generar un token de restablecimiento
     const token = crypto.randomBytes(20).toString('hex');
-    const expires = Date.now() + 3600000; // El token expira en 1 hora
+    const expires = new Date(Date.now() + 3600000); // El token expira en 1 hora
+
+    // Convertir la fecha a formato MySQL (YYYY-MM-DD HH:MM:SS)
+    const formattedExpires = expires.toISOString().slice(0, 19).replace('T', ' ');
 
     // Guardar el token y su expiración en la base de datos
     const updateQuery = 'UPDATE users SET reset_token = ?, reset_expires = ? WHERE id = ?';
-    pool.query(updateQuery, [token, expires, user.id], (err, updateResult) => {
-      if (err) {
-        console.error('Error al actualizar el token en la base de datos:', err);
-        return res.status(500).json({ message: 'Error al actualizar el token' });
-      }
+    await pool.query(updateQuery, [token, formattedExpires, user.id]);
 
-      // Configurar el transporte para nodemailer
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: '20221042@uthh.edu.mx',
-          pass: 'izbq sext sumd xkcu',
-        },
-      });
-
-      const mailOptions = {
-        from: '20221042@uthh.edu.mx',
-        to: email,
-        subject: 'Recuperación de Contraseña',
-        text: `Haz clic en el siguiente enlace para restablecer tu contraseña: http://localhost:8080/new-password?token=${token}`,
-      };
-
-      // Enviar el correo electrónico
-      transporter.sendMail(mailOptions, (err, info) => {
-        if (err) {
-          console.error('Error al enviar el correo:', err);
-          return res.status(500).json({ message: 'Error al enviar el correo' });
-        }
-
-        res.status(200).json({ message: 'Correo de recuperación enviado' });
-      });
+    // Configurar el transporter para nodemailer
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: '20221042@uthh.edu.mx',
+        pass: 'izbq sext sumd xkcu', // Usa un entorno seguro para las contraseñas
+      },
     });
-  });
+
+    // Enviar el correo electrónico
+    const mailOptions = {
+      from: '20221042@uthh.edu.mx',
+      to: email,
+      subject: 'Recuperación de Contraseña',
+      text: `Haz clic en el siguiente enlace para restablecer tu contraseña: 
+      http://localhost:8080/new-password?token=${token}`,
+    };
+
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ message: 'Correo de recuperación enviado' });
+  } catch (error) {
+    console.error('Error en la recuperación de contraseña:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
 });
+
 
 // Ruta para establecer una nueva contraseña
 app.post('/reset-password', async (req, res) => {
