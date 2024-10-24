@@ -416,7 +416,7 @@ app.post('/recover-password', async (req, res) => {
 
   try {
     // Buscar al usuario por correo electrónico
-    const userQuery = 'SELECT * FROM users WHERE email = ?'; 
+    const userQuery = 'SELECT * FROM users WHERE correo = ?'; 
     const result = await pool.query(userQuery, [email]);
 
     if (result.length === 0) {
