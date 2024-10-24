@@ -112,7 +112,7 @@ export default {
       console.log('Código de verificación:', this.verificationCode);
 
       try {
-        const response = await axios.post('https://proyectosin.onrender.com/recover-password', {
+        const response = await axios.post('https://proyectosin.onrender.com/verify-code', {
           usuarios: this.username,
           codigoVerificacion: this.verificationCode,
         }, {

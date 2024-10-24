@@ -411,60 +411,77 @@ app.post('/verify-code', (req, res) => {
 
 // Ruta para cambiar contraseña
 // Ruta para solicitar la recuperación de contraseña
-app.post('/recover-password', async (req, res) => {
+app.post('/recover-password', (req, res) => {
   const { email } = req.body;
+  
+  console.log("Recibiendo solicitud de recuperación para:", email);
 
-  try {
-    // Buscar al usuario por correo electrónico
-    const userQuery = 'SELECT * FROM users WHERE correo = ?'; 
-    const result = await pool.query(userQuery, [email]);
+  // Buscar al usuario por correo electrónico
+  const userQuery = 'SELECT * FROM users WHERE correo = ?';
+  pool.query(userQuery, [email], (err, results) => {
+    if (err) {
+      console.error('Error en la consulta de la base de datos:', err);
+      return res.status(500).json({ message: 'Error en la base de datos' });
+    }
 
-    if (result.length === 0) {
+    if (results.length === 0) {
+      console.log("Usuario no encontrado para:", email);
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    const user = result[0];
+    const user = results[0];
 
     // Generar un token de restablecimiento
     const token = crypto.randomBytes(20).toString('hex');
-    const expires = new Date(Date.now() + 3600000); // El token expira en 1 hora
-
-    // Convertir la fecha a formato MySQL (YYYY-MM-DD HH:MM:SS)
+    const expires = new Date(Date.now() + 3600000); // 1 hora de expiración
     const formattedExpires = expires.toISOString().slice(0, 19).replace('T', ' ');
 
-    // Guardar el token y su expiración en la base de datos
+    console.log("Token generado:", token);
+    console.log("Fecha de expiración:", formattedExpires);
+
+    // Actualizar la base de datos con el token y la fecha de expiración
     const updateQuery = 'UPDATE users SET reset_token = ?, reset_expires = ? WHERE id = ?';
-    await pool.query(updateQuery, [token, formattedExpires, user.id]);
+    pool.query(updateQuery, [token, formattedExpires, user.id], (err) => {
+      if (err) {
+        console.error('Error al actualizar el token de recuperación:', err);
+        return res.status(500).json({ message: 'Error al actualizar la base de datos' });
+      }
 
-    // Configurar el transporter para nodemailer
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: '20221042@uthh.edu.mx',
-        pass: 'izbq sext sumd xkcu', // Usa un entorno seguro para las contraseñas
-      },
+      // Configurar nodemailer
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: '20221042@uthh.edu.mx',
+          pass: 'izbq sext sumd xkcu',
+        },
+      });
+
+      // Enviar el correo electrónico
+      const mailOptions = {
+        from: '20221042@uthh.edu.mx',
+        to: email,
+        subject: 'Recuperación de Contraseña',
+        text: `Haz clic en el siguiente enlace para restablecer tu contraseña: http://localhost:8080/new-password?token=${token}`,
+      };
+
+      transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
+          console.error('Error al enviar el correo:', err);
+          return res.status(500).json({ message: 'Error al enviar el correo de recuperación' });
+        }
+
+        console.log("Correo enviado con éxito a:", email);
+        res.status(200).json({ message: 'Correo de recuperación enviado' });
+      });
     });
-
-    // Enviar el correo electrónico
-    const mailOptions = {
-      from: '20221042@uthh.edu.mx',
-      to: email,
-      subject: 'Recuperación de Contraseña',
-      text: `Haz clic en el siguiente enlace para restablecer tu contraseña: 
-      http://localhost:8080/new-password?token=${token}`,
-    };
-
-    await transporter.sendMail(mailOptions);
-    res.status(200).json({ message: 'Correo de recuperación enviado' });
-  } catch (error) {
-    console.error('Error en la recuperación de contraseña:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
-  }
+  });
 });
 
 
+
 // Ruta para establecer una nueva contraseña
-app.post('/reset-password', async (req, res) => {
+// Ruta para establecer una nueva contraseña
+app.post('/reset-password', (req, res) => {
   const { token, newPassword } = req.body;  // Aquí recibimos el token y la nueva contraseña
 
   // Verificar que ambos campos estén presentes
@@ -483,20 +500,40 @@ app.post('/reset-password', async (req, res) => {
     if (results.length === 0) {
       return res.status(400).send('Token inválido o expirado.');
     }
+    const userId = results[0].id;  // Extraemos el ID del usuario
+    console.log('ID del usuario encontrado:', userId);  // Asegurarnos de que el ID se obtiene correctamente
 
     // Encriptar la nueva contraseña
+    // Encriptar la nueva contraseña
     bcrypt.hash(newPassword, 10, (err, hash) => {
-      if (err) return res.status(500).send('Error al encriptar la contraseña');
+      if (err) {
+        console.error('Error al encriptar la contraseña:', err);
+        return res.status(500).send('Error al encriptar la contraseña.');
+      }
 
-      // Actualizar la contraseña y borrar el token y su expiración
-      const updateSql = 'UPDATE users SET password = ?, reset_token = NULL, reset_expires = NULL WHERE id = ?';
-      pool.query(updateSql, [hash, results[0].id], (err) => {
-        if (err) {
-          console.error('Error al actualizar la contraseña:', err);
-          return res.status(500).send('Error al actualizar la contraseña.');
+      // Actualizar la contraseña, borrar el token, su expiración y restablecer intentosFallidos y bloqueadoHasta
+      const updateSql = `UPDATE users 
+                         SET password = ?, 
+                             reset_token = NULL, 
+                             reset_expires = NULL, 
+                             intentosFallidos = 0, 
+                             bloqueadoHasta = NULL 
+                         WHERE id = ?`;
+
+                         pool.query(updateSql, [hash, userId], (err, updateResult) => {
+                          if (err) {
+                            console.error('Error al actualizar los campos:', err);
+                            return res.status(500).send('Error al actualizar la base de datos.');
+                          }
+
+        // Verifica si la consulta afectó alguna fila
+        if (updateResult.affectedRows === 0) {
+          console.warn('No se encontró el usuario o no se pudo actualizar.');
+          return res.status(400).send('No se encontró el usuario o no se pudo actualizar.');
         }
 
-        res.status(200).send('Contraseña actualizada con éxito.');
+        console.log('Contraseña actualizada y campos reiniciados con éxito.');
+        res.status(200).send('Contraseña actualizada y cuenta desbloqueada con éxito.');
       });
     });
   });
