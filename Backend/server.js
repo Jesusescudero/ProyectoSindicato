@@ -65,14 +65,14 @@ const intentosLogin = {};
 
 // Configurar la sesión con cookies seguras en producción
 app.use(session({
-  secret: 'tu_secreto', // Cambia esto por un secreto real en producción
+  secret: 'tu_secreto',
   resave: false,
   saveUninitialized: true,
   cookie: {
-    httpOnly: true,       // Las cookies no serán accesibles desde JavaScript del cliente
-    secure: process.env.NODE_ENV === 'production', // Solo true en producción (HTTPS)
-    sameSite: 'None',      // O 'None' si haces solicitudes entre dominios
-    maxAge: 30 * 60 * 1000 // Duración de la sesión: 30 minutos
+    httpOnly: true,   // No accesible desde el navegador
+    secure: true,     // Solo se envían a través de HTTPS
+    sameSite: 'None', // Necesario para cross-origin
+    maxAge: 30 * 60 * 1000 // 30 minutos
   }
 }));
 
@@ -328,8 +328,8 @@ app.post('/login', (req, res) => {
                   // Establecer el token como una cookie segura
                   res.cookie('token', token, {
                     httpOnly: true,       // Solo accesible en el servidor
-                    secure: process.env.NODE_ENV === 'production', // Cambiar a true en producción (HTTPS)
-                    sameSite: 'None', // Permitir cookies entre diferentes dominios
+                    secure: false,         // Debe ser true porque Render usa HTTPS
+                    sameSite: 'None',     // Necesario para permitir cookies en cross-origin (diferentes dominios)
                     maxAge: 60 * 60 * 1000 // 1 hora de duración
                   });
                   // Imprimir las cookies justo después de establecerla
