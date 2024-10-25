@@ -66,13 +66,13 @@ const intentosLogin = {};
 // Configurar la sesión con cookies seguras en producción
 app.use(session({
   secret: 'tu_secreto',
-  resave: false,
-  saveUninitialized: true,
+  resave: false, // No guardar la sesión si no ha cambiado
+  saveUninitialized: false, // No crear sesiones vacías
   cookie: {
     httpOnly: true,   // No accesible desde el navegador
-    secure: true,     // Solo se envían a través de HTTPS
-    sameSite: 'None', // Necesario para cross-origin
-    maxAge: 30 * 60 * 1000 // 30 minutos
+    secure: false,    // Solo en HTTPS en producción
+    sameSite: 'Lax',  // Evitar que se envíe la cookie en peticiones de sitios cruzados
+    maxAge: 60 * 60 * 1000 // 1 hora de duración
   }
 }));
 
@@ -102,6 +102,33 @@ async function enviarCodigoVerificacion(correo, codigo) {
     return { success: false, message: 'Error al enviar el correo de verificación', error };
   }
 }
+
+// Middleware para verificar si el usuario es administrador
+function verifyAdmin(req, res, next) {
+  const token = req.headers.authorization.split(' ')[1]; // Tomar el token de la cabecera
+
+  jwt.verify(token, process.env.JWT_SECRET || 'mi_secreto', (err, decoded) => {
+    if (err || decoded.role !== 'admin') {
+      return res.status(403).send('Acceso denegado. No tienes permisos de administrador.');
+    }
+    next(); // Si es administrador, continuar
+  });
+}
+
+// Middleware para verificar si el usuario está autenticado
+function verifyUser(req, res, next) {
+  const token = req.headers.authorization.split(' ')[1]; // Tomar el token de la cabecera
+
+  jwt.verify(token, process.env.JWT_SECRET || 'mi_secreto', (err, decoded) => {
+    if (err) {
+      return res.status(401).send('No autenticado');
+    }
+    req.user = decoded; // Guardar los datos del usuario en la solicitud
+    next(); // Si está autenticado, continuar
+  });
+}
+
+
 
 
 app.use((req, res, next) => {
@@ -228,6 +255,16 @@ app.post('/register', async (req, res) => {
   });
 });
 
+// Ruta protegida para administradores
+app.get('/admin-dashboard', verifyAdmin, (req, res) => {
+  res.send('Bienvenido al panel de administración');
+});
+
+// Ruta protegida para usuarios regulares
+app.get('/user-dashboard', verifyUser, (req, res) => {
+  res.send('Bienvenido al panel de usuario');
+});
+
 // Ruta de inicio de sesión
 app.post('/login', (req, res) => {
   const { usuarios, password, recaptchaToken } = req.body;
@@ -312,33 +349,24 @@ app.post('/login', (req, res) => {
                   if (!result.success) {
                     return res.status(500).send(result.message);
                   }
+                  // Almacenar información relevante en la sesión
+                  req.session.userId = user.id;
+                  req.session.username = user.usuarios;
 
                   // Establecer el tiempo de expiración de la sesión
                   req.session.cookie.expires = new Date(Date.now() + 30 * 60 * 1000);  // 30 minutos
                   req.session.cookie.maxAge = 30 * 60 * 1000;  // Sesiones basadas en actividad
 
-                  // Generar el token JWT
-                  const token = jwt.sign({ id: user.id, usuarios: user.usuarios }, process.env.JWT_SECRET || 'mi_secreto', {
-                    expiresIn: '1h'
+                  // Generar el token incluyendo el rol
+                  const token = jwt.sign({ id: user.id, usuarios: user.usuarios, role: user.role }, process.env.JWT_SECRET || 'mi_secreto', {
+                    expiresIn: '1h',
                   });
-                  console.log('Cookies:', req.cookies);
 
-
-                  console.log('Antes de establecer la cookie');
-                  // Establecer el token como una cookie segura
-                  res.cookie('token', token, {
-                    httpOnly: true,       // Solo accesible en el servidor
-                    secure: false,         // Debe ser true porque Render usa HTTPS
-                    sameSite: 'None',     // Necesario para permitir cookies en cross-origin (diferentes dominios)
-                    maxAge: 60 * 60 * 1000 // 1 hora de duración
-                  });
-                  // Imprimir las cookies justo después de establecerla
-                  console.log('Cookie establecida:', req.cookies);
-                  
+                  // Retornar el token al cliente
                   return res.status(200).json({
-                    token,
-                    codigoVerificacion,
-                    message: 'Inicio de sesión exitoso. ¡Revisa tu correo para el código de verificación!'
+                    token, // El token JWT
+                    message: 'Inicio de sesión exitoso',
+                    userId: user.id
                   });
                 });
               });
@@ -353,10 +381,30 @@ app.post('/login', (req, res) => {
     });
 });
 
-app.get('/session-info', (req, res) => {
-  res.json(req.session);
+// Ruta para verificar si el token JWT es válido
+// Ruta para verificar si el token JWT es válido
+app.get('/check-token', (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1]; // Obtener el token del encabezado
+
+  if (!token) {
+    return res.status(401).json({ valid: false, message: 'Token no proporcionado' });
+  }
+
+  // Verificar el token
+  jwt.verify(token, process.env.JWT_SECRET || 'mi_secreto', (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ valid: false, message: 'Token inválido' });
+    }
+
+    // Si el token es válido, devolver una respuesta positiva
+    return res.status(200).json({ valid: true, userId: decoded.id });
+  });
 });
+
+
+
 app.get('/check-session', (req, res) => {
+  console.log('Sesión actual:', req.session); // Esto imprimirá la sesión actual en cada solicitud
   if (req.session && req.session.userId) {
     return res.status(200).json({ loggedIn: true, userId: req.session.userId });
   }
@@ -413,7 +461,7 @@ app.post('/verify-code', (req, res) => {
 // Ruta para solicitar la recuperación de contraseña
 app.post('/recover-password', (req, res) => {
   const { email } = req.body;
-  
+
   console.log("Recibiendo solicitud de recuperación para:", email);
 
   // Buscar al usuario por correo electrónico
@@ -520,11 +568,11 @@ app.post('/reset-password', (req, res) => {
                              bloqueadoHasta = NULL 
                          WHERE id = ?`;
 
-                         pool.query(updateSql, [hash, userId], (err, updateResult) => {
-                          if (err) {
-                            console.error('Error al actualizar los campos:', err);
-                            return res.status(500).send('Error al actualizar la base de datos.');
-                          }
+      pool.query(updateSql, [hash, userId], (err, updateResult) => {
+        if (err) {
+          console.error('Error al actualizar los campos:', err);
+          return res.status(500).send('Error al actualizar la base de datos.');
+        }
 
         // Verifica si la consulta afectó alguna fila
         if (updateResult.affectedRows === 0) {
