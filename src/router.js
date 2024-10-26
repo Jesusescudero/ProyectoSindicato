@@ -8,6 +8,7 @@ import NewPassword from './components/NewPassword.vue';
 import DocumentManager from './components/DocumentManager.vue';
 import LegalDisclaimerManager from './components/LegalDisclaimer.vue';
 import TermsAndConditions from './components/TermsAndConditions.vue';
+import CompanySettings from './components/CompanySettings.vue';
 import { jwtDecode } from 'jwt-decode'; // Importa jwt_decode para manejar el token
 
 const routes = [
@@ -49,6 +50,12 @@ const routes = [
     name: 'TermsAndConditions',
     component: TermsAndConditions,
     meta: { requiresAuth: true, role: 'admin' },
+  },
+  {
+    path: '/admin/company-settings',
+    name: 'CompanySettings',
+    component: CompanySettings,
+    meta: { requiresAuth: true, role: 'admin' }, // Solo accesible para administradores
   },
   {
     path: '/reset-password',

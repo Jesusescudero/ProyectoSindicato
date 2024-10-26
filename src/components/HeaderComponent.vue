@@ -1,6 +1,12 @@
 <template>
   <header>
-    <h1>SUTUTEH</h1>
+    
+    <div class="header-content">
+      <!-- Mostrar el logo -->
+      <img :src="logoUrl" alt="Logo de la Empresa" class="company-logo" v-if="logoUrl" />
+      <h1>{{ companyName }}</h1>
+      
+    </div>
     <nav>
       <router-link to="/">Inicio</router-link>
       <!-- Mostrar "Iniciar Sesión" y "Registrarse" solo si no está autenticado -->
@@ -12,6 +18,7 @@
       <router-link v-if="isAuthenticated && userRole === 'admin'" to="/admin/documents">Documento Regulatorio</router-link>
       <router-link v-if="isAuthenticated && userRole === 'admin'" to="/admin/legal-disclaimer">Deslinde Legal</router-link>
       <router-link v-if="isAuthenticated && userRole === 'admin'" to="/admin/terms-and-conditions">Términos y Condiciones</router-link>
+      <router-link v-if="isAuthenticated && userRole === 'admin'" to="/admin/company-settings">Configuración de Empresa</router-link>
       <!-- Mostrar otras rutas si es un usuario normal -->
       <router-link v-if="isAuthenticated && userRole === 'user'" to="/user-dashboard">Mi Panel</router-link>
       <!-- Mostrar "Componente Especial" solo para usuarios regulares -->
@@ -22,12 +29,16 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 import { jwtDecode } from 'jwt-decode'; // Importación correcta
 
 export default {
   name: 'HeaderComponent',
   data() {
     return {
+      companyName: '',
+      logoUrl: '',
       isAuthenticated: false,
       userRole: null
     };
@@ -37,6 +48,7 @@ export default {
     if (token) {
       this.verifyToken(token);
     }
+    this.fetchCompanyData();
   },
   watch: {
     // Monitorea cambios en la ruta actual
@@ -51,6 +63,18 @@ export default {
     }
   },
   methods: {
+    async fetchCompanyData() {
+    try {
+      // Obtener el nombre de la empresa
+      const companyResponse = await axios.get('https://proyectosin.onrender.com/company-name');
+      this.companyName = companyResponse.data.nombre_empresa;
+
+      // En lugar de obtener el logo como Blob, usa la URL directamente
+      this.logoUrl = 'https://proyectosin.onrender.com/logo';  // URL directa del logo
+    } catch (error) {
+      console.error('Error al obtener los datos de la empresa:', error);
+    }
+  },
     verifyToken(token) {
       try {
         const decoded = jwtDecode(token); // Decodificar el token
@@ -60,6 +84,14 @@ export default {
         console.error('Error al decodificar el token:', error);
         this.isAuthenticated = false;
         this.userRole = null;
+      }
+    },
+    async fetchCompanyName() {
+      try {
+        const response = await axios.get('https://proyectosin.onrender.com/company-name');
+        this.companyName = response.data.nombre_empresa; // Asignamos el nombre de la empresa
+      } catch (error) {
+        console.error('Error al obtener el nombre de la empresa:', error);
       }
     },
     async logout() {
@@ -105,6 +137,24 @@ button {
 
 button:hover {
   background-color: #e03a3a; /* Color al pasar el ratón */
+}
+.header-content {
+  position: relative;            /* Para poder posicionar el logo sin afectar el contenido */
+  text-align: center;            /* Centra el texto en el contenedor */
+}
+
+.company-logo {
+  position: absolute;            /* Hace que el logo no interfiera con el contenido centrado */
+  left: 20px;                    /* Alinea el logo a la izquierda con un margen */
+  max-width: 80px;               /* Tamaño más pequeño */
+  height: 80px;                  /* Altura fija */
+  border-radius: 50%;            /* Hacer el logo redondo */
+  object-fit: cover;             /* Asegurar que la imagen no se deforme */
+}
+
+.company-name {
+  display: inline-block;         /* Asegura que el nombre esté centrado */
+  margin: 0;
 }
 </style>
 

@@ -11,6 +11,7 @@ const crypto = require('crypto');
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const app = express();
+const multer = require('multer');
 
 
 // Middleware
@@ -41,6 +42,10 @@ const pool = mysql.createPool({
   connectionLimit: 10, // Número máximo de conexiones en el pool
   queueLimit: 0 // Número máximo de consultas en la cola (0 = sin límite)
 });
+
+// Configuración de multer para almacenar archivos en memoria
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 
 // Cuando necesites realizar una query
@@ -129,12 +134,210 @@ function verifyUser(req, res, next) {
 }
 
 
-
-
 app.use((req, res, next) => {
   console.log('Cookies: ', req.cookies);
   next();
 });
+
+// Ruta para guardar o actualizar el logo en la base de datos como binario
+app.post('/upload-logo', upload.single('logo'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No se ha subido ningún archivo' });
+  }
+
+  const logoData = req.file.buffer;
+
+  pool.query('UPDATE configuracion_empresa SET logo = ? WHERE id = 1', [logoData], (err) => {
+    if (err) {
+      console.error('Error al guardar el logo en la base de datos:', err);
+      return res.status(500).json({ message: 'Error al guardar el logo en la base de datos' });
+    }
+    res.status(200).json({ message: 'Logo guardado correctamente' });
+  });
+});
+
+// Ruta para actualizar el eslogan
+app.post('/slogan', (req, res) => {
+  const { slogan } = req.body;
+
+  console.log('Slogan recibido:', slogan);  // Verifica si el valor de slogan es correcto
+
+  if (!slogan || slogan.trim() === '') {
+    return res.status(400).send('El eslogan está vacío o es nulo');
+  }
+
+  const sql = `UPDATE configuracion_empresa SET eslogan = ? WHERE id = 1`;
+
+  pool.query(sql, [slogan], (err, results) => {
+    if (err) {
+      console.error('Error al actualizar el slogan:', err);
+      return res.status(500).send('Error al actualizar el slogan.');
+    }
+    res.status(200).send('Slogan actualizado correctamente.');
+  });
+});
+
+
+// Ruta para actualizar la dirección de contacto
+// Ruta para actualizar los datos de contacto (puede ser uno o más campos)
+app.post('/update-contact-info', (req, res) => {
+  const { direccion_contacto, correo_contacto, telefono_contacto } = req.body;
+  
+  let sql = 'UPDATE configuracion_empresa SET ';
+  const fields = [];
+  const values = [];
+
+  // Solo agregamos los campos que no sean nulos o vacíos
+  if (direccion_contacto) {
+    fields.push('direccion_contacto = ?');
+    values.push(direccion_contacto);
+  }
+  if (correo_contacto) {
+    fields.push('correo_contacto = ?');
+    values.push(correo_contacto);
+  }
+  if (telefono_contacto) {
+    fields.push('telefono_contacto = ?');
+    values.push(telefono_contacto);
+  }
+
+  // Si no hay campos para actualizar, devolver un error
+  if (fields.length === 0) {
+    return res.status(400).json({ message: 'No se enviaron campos para actualizar.' });
+  }
+
+  sql += fields.join(', ') + ' WHERE id = 1';
+
+  pool.query(sql, values, (err) => {
+    if (err) {
+      console.error('Error al actualizar los datos de contacto:', err);
+      return res.status(500).json({ message: 'Error al actualizar los datos de contacto.' });
+    }
+    res.status(200).json({ message: 'Datos de contacto actualizados correctamente.' });
+  });
+});
+
+
+// Ruta para guardar enlaces de redes sociales (solo accesible para admin)
+app.post('/update-social-links', (req, res) => {
+  const socialLinks = req.body;
+
+  // Inicializar los valores de facebook e instagram
+  let facebook = "";
+  let instagram = "";
+
+  // Recorrer el array para extraer las URLs correspondientes
+  socialLinks.forEach(link => {
+    if (link.platform === 'Facebook') {
+      facebook = link.url;
+    }
+    if (link.platform === 'Instagram') {
+      instagram = link.url;
+    }
+  });
+
+  // Ahora actualizamos la base de datos
+  const sql = `UPDATE configuracion_empresa SET facebook = ?, instagram = ? WHERE id = 1`;
+  pool.query(sql, [facebook, instagram], (err, results) => {
+    if (err) {
+      console.error('Error al actualizar enlaces de redes sociales:', err);
+      return res.status(500).send('Error al actualizar enlaces de redes sociales.');
+    }
+    res.status(200).send('Enlaces de redes sociales actualizados correctamente.');
+  });
+});
+
+// Ruta para actualizar el título de la página
+app.post('/update-title', verifyAdmin, (req, res) => {
+  const { title } = req.body;
+
+  console.log('Título recibido:', title);  // Verifica si el valor del título es correcto
+
+  if (!title || title.trim() === '') {
+    return res.status(400).send('El título está vacío o es nulo');
+  }
+
+  const sql = `UPDATE configuracion_empresa SET nombre_empresa = ? WHERE id = 1`;
+
+  pool.query(sql, [title], (err, results) => {
+    if (err) {
+      console.error('Error al actualizar el título de la página:', err);
+      return res.status(500).send('Error al actualizar el título de la página.');
+    }
+    res.status(200).send('Título de la página actualizado correctamente.');
+  });
+});
+
+// Ruta para obtener el nombre de la empresa
+app.get('/company-name', (req, res) => {
+  const sql = 'SELECT nombre_empresa FROM configuracion_empresa WHERE id = 1';
+
+  pool.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error al obtener el nombre de la empresa:', err);
+      return res.status(500).json({ message: 'Error al obtener el nombre de la empresa.' });
+    }
+    res.status(200).json(results[0]); // Retorna el primer resultado
+  });
+});
+
+// Ruta para obtener la información de contacto
+// Ruta para obtener la información de contacto de la empresa
+app.get('/contact-info', (req, res) => {
+  const sql = `SELECT direccion_contacto, correo_contacto, telefono_contacto FROM configuracion_empresa WHERE id = 1`;
+
+  pool.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error al obtener la información de contacto:', err);
+      return res.status(500).json({ message: 'Error al obtener la información de contacto.' });
+    }
+    
+    if (results.length > 0) {
+      res.status(200).json(results[0]);  // Devolver la primera fila con los datos de contacto
+    } else {
+      res.status(404).json({ message: 'No se encontró la información de contacto.' });
+    }
+  });
+});
+
+
+// Ruta para obtener los enlaces de redes sociales
+app.get('/social-links', (req, res) => {
+  const sql = 'SELECT facebook, instagram FROM configuracion_empresa WHERE id = 1';
+  
+  pool.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error al obtener los enlaces de redes sociales:', err);
+      return res.status(500).json({ message: 'Error al obtener los enlaces de redes sociales.' });
+    }
+
+    if (results.length > 0) {
+      res.status(200).json(results[0]);
+    } else {
+      res.status(404).json({ message: 'No se encontraron enlaces de redes sociales.' });
+    }
+  });
+});
+// Ruta para obtener el logo de la empresa
+app.get('/logo', (req, res) => {
+  const sql = `SELECT logo FROM configuracion_empresa WHERE id = 1`;
+
+  pool.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error al obtener el logo:', err);
+      return res.status(500).send('Error al obtener el logo.');
+    }
+
+    if (results.length > 0 && results[0].logo) {
+      res.setHeader('Content-Type', 'image/png');
+      res.send(results[0].logo);  // Enviar el logo como archivo binario
+    } else {
+      res.status(404).send('Logo no encontrado.');
+    }
+  });
+});
+
+
 
 // Ruta de registro sin reCAPTCHA
 app.post('/register', async (req, res) => {
