@@ -2,12 +2,19 @@
   <footer class="footer">
     <div class="footer-content">
       <p>&copy; 2024 {{ companyName }}. Todos los derechos reservados.</p>
-      <p>Dirección: {{ contactInfo.address }}</p> <!-- Aquí se muestra la dirección -->
+      <p>Dirección: {{ contactInfo.address }}</p>
       <p>Contacto: {{ contactInfo.email }} | Teléfono: {{ contactInfo.phone }}</p>
       <p>
         <a :href="socialLinks.facebook" target="_blank">Facebook</a> | 
         <a :href="socialLinks.instagram" target="_blank">Instagram</a>
       </p>
+      
+      <!-- Enlaces para descargar los documentos -->
+      <div class="document-links">
+        <p><a href="https://proyectosin.onrender.com/download-terminos-condiciones" target="_blank">Términos y Condiciones</a></p>
+        <p><a href="https://proyectosin.onrender.com/download-politica-privacidad" target="_blank">Política de Privacidad</a></p>
+        <p><a href="https://proyectosin.onrender.com/download-deslinde-legal" target="_blank">Deslinde Legal</a></p>
+      </div>
     </div>
   </footer>
 </template>
@@ -29,34 +36,45 @@ export default {
         facebook: '',
         instagram: ''
       },
-      success: true,          // Para indicar si la consulta fue exitosa
+      activeDocuments: [],   // Documentos vigentes
+      success: true,         // Para indicar si la consulta fue exitosa
     };
   },
   created() {
-    this.fetchCompanyData(); // Llamar a la función al crear el componente
+    this.fetchCompanyData();     // Llamar a la función al crear el componente
+    this.fetchActiveDocuments(); // Llamar a la función para obtener documentos vigentes
   },
   methods: {
     async fetchCompanyData() {
       try {
-        // Obtener el nombre de la empresa
         const companyResponse = await axios.get('https://proyectosin.onrender.com/company-name');
         this.companyName = companyResponse.data.nombre_empresa;
 
-        // Obtener la información de contacto
         const contactResponse = await axios.get('https://proyectosin.onrender.com/contact-info');
-        this.contactInfo.address = contactResponse.data.direccion_contacto;  // Obtener la dirección
+        this.contactInfo.address = contactResponse.data.direccion_contacto;
         this.contactInfo.email = contactResponse.data.correo_contacto;
         this.contactInfo.phone = contactResponse.data.telefono_contacto;
 
-        // Obtener los enlaces de redes sociales
         const socialResponse = await axios.get('https://proyectosin.onrender.com/social-links');
         this.socialLinks.facebook = socialResponse.data.facebook;
         this.socialLinks.instagram = socialResponse.data.instagram;
 
-        this.success = true;  // La operación fue exitosa
+        this.success = true;
       } catch (error) {
-        this.success = false; // La operación falló
+        this.success = false;
         console.error("Error al obtener los datos de la empresa:", error);
+      }
+    },
+    async fetchActiveDocuments() {
+      try {
+        const response = await axios.get('https://proyectosin.onrender.com/documents-vigentes');
+        if (response.status === 200) {
+          this.activeDocuments = response.data;
+        } else {
+          console.error('Error al obtener documentos vigentes:', response.data.message);
+        }
+      } catch (error) {
+        console.error('Error al obtener documentos vigentes:', error);
       }
     }
   }
@@ -92,4 +110,32 @@ export default {
 .footer a:hover {
   text-decoration: underline; /* Subrayar al pasar el cursor */
 }
+
+.documents-list {
+  margin-top: 20px;
+}
+
+.documents-list h4 {
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.documents-list ul {
+  list-style: none;
+  padding: 0;
+}
+
+.documents-list li {
+  margin-bottom: 5px;
+}
+
+.documents-list a {
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.documents-list a:hover {
+  text-decoration: underline;
+}
 </style>
+

@@ -4,8 +4,10 @@
     <div class="header-content">
       <!-- Mostrar el logo -->
       <img :src="logoUrl" alt="Logo de la Empresa" class="company-logo" v-if="logoUrl" />
-      <h1>{{ companyName }}</h1>
-      
+      <div class="text-container">
+        <h1 class="company-name">{{ companyName }}</h1>
+        <p class="company-slogan">{{ companySlogan }}</p> <!-- Mostrar el slogan -->
+      </div>
     </div>
     <nav>
       <router-link to="/">Inicio</router-link>
@@ -15,7 +17,7 @@
       <!-- Mostrar "Cerrar Sesión" solo si está autenticado -->
       <button v-if="isAuthenticated" @click="logout">Cerrar Sesión</button>
       <!-- Mostrar "Panel de Admin" solo si es administrador -->
-      <router-link v-if="isAuthenticated && userRole === 'admin'" to="/admin/documents">Documento Regulatorio</router-link>
+      <router-link v-if="isAuthenticated && userRole === 'admin'" to="/admin/documents">Politicas de Privacidad</router-link>
       <router-link v-if="isAuthenticated && userRole === 'admin'" to="/admin/legal-disclaimer">Deslinde Legal</router-link>
       <router-link v-if="isAuthenticated && userRole === 'admin'" to="/admin/terms-and-conditions">Términos y Condiciones</router-link>
       <router-link v-if="isAuthenticated && userRole === 'admin'" to="/admin/company-settings">Configuración de Empresa</router-link>
@@ -38,6 +40,7 @@ export default {
   data() {
     return {
       companyName: '',
+      companySlogan: '',  // Para guardar el slogan
       logoUrl: '',
       isAuthenticated: false,
       userRole: null
@@ -66,8 +69,10 @@ export default {
     async fetchCompanyData() {
     try {
       // Obtener el nombre de la empresa
+      // Obtener el nombre y el slogan de la empresa
       const companyResponse = await axios.get('https://proyectosin.onrender.com/company-name');
-      this.companyName = companyResponse.data.nombre_empresa;
+        this.companyName = companyResponse.data.nombre_empresa;
+        this.companySlogan = companyResponse.data.eslogan; // Asignamos el slogan de la empresa
 
       // En lugar de obtener el logo como Blob, usa la URL directamente
       this.logoUrl = 'https://proyectosin.onrender.com/logo';  // URL directa del logo
@@ -152,9 +157,20 @@ button:hover {
   object-fit: cover;             /* Asegurar que la imagen no se deforme */
 }
 
+.text-container {
+  text-align: center;
+}
+
 .company-name {
-  display: inline-block;         /* Asegura que el nombre esté centrado */
+  font-size: 2rem;
   margin: 0;
+}
+
+.company-slogan {
+  font-size: 1.2rem;
+  font-style: italic;
+  margin-top: 5px;
+  color: #e0e0e0;
 }
 </style>
 

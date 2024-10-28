@@ -268,18 +268,24 @@ app.post('/update-title', verifyAdmin, (req, res) => {
   });
 });
 
-// Ruta para obtener el nombre de la empresa
+// Ruta para obtener el nombre de la empresa y el slogan
 app.get('/company-name', (req, res) => {
-  const sql = 'SELECT nombre_empresa FROM configuracion_empresa WHERE id = 1';
+  const sql = 'SELECT nombre_empresa, eslogan FROM configuracion_empresa WHERE id = 1';
 
   pool.query(sql, (err, results) => {
     if (err) {
-      console.error('Error al obtener el nombre de la empresa:', err);
-      return res.status(500).json({ message: 'Error al obtener el nombre de la empresa.' });
+      console.error('Error al obtener los datos de la empresa:', err);
+      return res.status(500).json({ message: 'Error al obtener los datos de la empresa.' });
     }
-    res.status(200).json(results[0]); // Retorna el primer resultado
+
+    if (results.length > 0) {
+      res.status(200).json(results[0]); // Retorna el nombre y el slogan
+    } else {
+      res.status(404).json({ message: 'Datos de la empresa no encontrados.' });
+    }
   });
 });
+
 
 // Ruta para obtener la información de contacto
 // Ruta para obtener la información de contacto de la empresa
@@ -334,6 +340,364 @@ app.get('/logo', (req, res) => {
     } else {
       res.status(404).send('Logo no encontrado.');
     }
+  });
+});
+
+// Ruta para subir el documento
+// Ruta para subir un nuevo documento y marcar los anteriores como "no vigentes"
+app.post('/upload-document', upload.single('file'), (req, res) => {
+  const { validUntil } = req.body;
+
+  if (!req.file) {
+    return res.status(400).json({ message: 'No se ha subido ningún archivo' });
+  }
+
+  const fileData = req.file.buffer;  // El archivo binario
+  const createdAt = new Date();  // Fecha de creación
+
+  // Buscar la versión del último documento vigente
+  const getLastVersionSql = `SELECT version FROM deslinde_legal WHERE deleted = 0 ORDER BY createdAt DESC LIMIT 1`;
+  pool.query(getLastVersionSql, (err, results) => {
+    if (err) {
+      console.error('Error al obtener la última versión:', err);
+      return res.status(500).json({ message: 'Error al obtener la última versión' });
+    }
+
+    let newVersion = "1.0"; // Versión inicial si no hay documentos previos
+    if (results.length > 0 && results[0].version) {
+      newVersion = (parseFloat(results[0].version) + 1.0).toFixed(1); // Incrementar la versión del último documento
+    }
+
+    // Marcar el último documento vigente como no vigente (deleted = 1)
+    const markOldDocumentsSql = `UPDATE deslinde_legal SET deleted = 1 WHERE deleted = 0 ORDER BY createdAt DESC LIMIT 1`;
+    pool.query(markOldDocumentsSql, (err) => {
+      if (err) {
+        console.error('Error al marcar el documento anterior como no vigente:', err);
+        return res.status(500).json({ message: 'Error al marcar el documento anterior como no vigente' });
+      }
+
+      // Insertar el nuevo documento con la nueva versión
+      const insertNewDocumentSql = `INSERT INTO deslinde_legal (version, file, createdAt, validUntil, deleted) VALUES (?, ?, ?, ?, 0)`;
+      pool.query(insertNewDocumentSql, [newVersion, fileData, createdAt, validUntil], (err, result) => {
+        if (err) {
+          console.error('Error al guardar el nuevo documento en la base de datos:', err);
+          return res.status(500).json({ message: 'Error al guardar el nuevo documento en la base de datos' });
+        }
+        res.status(200).json({ message: 'Documento subido exitosamente', documentId: result.insertId, version: newVersion });
+      });
+    });
+  });
+});
+
+
+// Ruta para obtener un documento por ID (descargar)
+// Ruta para obtener y descargar un documento por ID
+app.get('/documents/:id', (req, res) => {
+  const { id } = req.params;
+
+  const sql = `SELECT file, version FROM deslinde_legal WHERE id = ?`;
+  pool.query(sql, [id], (err, results) => {
+    if (err) {
+      console.error('Error al obtener el documento:', err);
+      return res.status(500).json({ message: 'Error al obtener el documento' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'Documento no encontrado' });
+    }
+
+    const document = results[0];
+
+    // Configurar el encabezado para la descarga del archivo
+    res.setHeader('Content-Disposition', `attachment; filename="documento_version_${document.version}.pdf"`);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.send(document.file); // Enviamos el archivo binario
+  });
+});
+
+// Ruta para obtener todos los documentos (vigentes y no vigentes)
+app.get('/documents', (req, res) => {
+  const sql = `SELECT id, version, createdAt, validUntil, deleted FROM deslinde_legal`;
+  
+  pool.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error al obtener los documentos:', err);
+      return res.status(500).json({ message: 'Error al obtener los documentos' });  // Si hay un error, lo devolvemos al cliente
+    }
+    res.status(200).json(results);  // Devolvemos todos los documentos en formato JSON
+  });
+});
+
+// Ruta para marcar un documento como no vigente (deleted = 1)
+app.post('/delete-document/:id', (req, res) => {
+  const { id } = req.params;
+
+  const sql = `UPDATE deslinde_legal SET deleted = 1 WHERE id = ?`;
+  pool.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error('Error al marcar el documento como no vigente:', err);
+      return res.status(500).json({ message: 'Error al marcar el documento como no vigente' });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Documento no encontrado' });
+    }
+
+    res.status(200).json({ message: 'Documento marcado como no vigente exitosamente' });
+  });
+});
+
+app.post('/upload-aviso-privacidad', upload.single('file'), (req, res) => {
+  const { validUntil } = req.body;
+
+  if (!req.file) {
+    return res.status(400).json({ message: 'No se ha subido ningún archivo' });
+  }
+
+  const fileData = req.file.buffer;
+  const createdAt = new Date();
+
+  const getLastVersionSql = `SELECT version FROM aviso_privacidad WHERE deleted = 0 ORDER BY createdAt DESC LIMIT 1`;
+  pool.query(getLastVersionSql, (err, results) => {
+    if (err) {
+      console.error('Error al obtener la última versión:', err);
+      return res.status(500).json({ message: 'Error al obtener la última versión' });
+    }
+
+    let newVersion = "1.0";
+    if (results.length > 0 && results[0].version) {
+      newVersion = (parseFloat(results[0].version) + 1.0).toFixed(1);
+    }
+
+    const markOldDocumentsSql = `UPDATE aviso_privacidad SET deleted = 1 WHERE deleted = 0 ORDER BY createdAt DESC LIMIT 1`;
+    pool.query(markOldDocumentsSql, (err) => {
+      if (err) {
+        console.error('Error al marcar el documento anterior como no vigente:', err);
+        return res.status(500).json({ message: 'Error al marcar el documento anterior como no vigente' });
+      }
+
+      const insertNewDocumentSql = `INSERT INTO aviso_privacidad (version, file, createdAt, validUntil, deleted) VALUES (?, ?, ?, ?, 0)`;
+      pool.query(insertNewDocumentSql, [newVersion, fileData, createdAt, validUntil], (err, result) => {
+        if (err) {
+          console.error('Error al guardar el nuevo documento en la base de datos:', err);
+          return res.status(500).json({ message: 'Error al guardar el nuevo documento en la base de datos' });
+        }
+        res.status(200).json({ message: 'Documento de Aviso de Privacidad subido exitosamente', documentId: result.insertId, version: newVersion });
+      });
+    });
+  });
+});
+
+
+app.get('/documents-aviso-privacidad', (req, res) => {
+  const sql = `SELECT id, version, createdAt, validUntil, deleted FROM politica_privacidad`;
+  pool.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error al obtener los documentos de Aviso de Privacidad:', err);
+      return res.status(500).json({ message: 'Error al obtener los documentos' });
+    }
+    res.json(results); // Enviar la lista de documentos
+  });
+});
+
+app.get('/documents-aviso-privacidad/:id', (req, res) => {
+  const { id } = req.params;
+
+  const sql = `SELECT file, version FROM politica_privacidad WHERE id = ?`;
+  pool.query(sql, [id], (err, results) => {
+    if (err) {
+      console.error('Error al obtener el documento:', err);
+      return res.status(500).json({ message: 'Error al obtener el documento' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'Documento no encontrado' });
+    }
+
+    const document = results[0];
+
+    // Configurar los encabezados para la descarga del archivo
+    res.setHeader('Content-Disposition', `attachment; filename="aviso_privacidad_version_${document.version}.pdf"`);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.send(document.file); // Enviar el archivo binario
+  });
+});
+app.post('/delete-aviso-privacidad/:id', (req, res) => {
+  const { id } = req.params;
+
+  const sql = `UPDATE politica_privacidad SET deleted = 1 WHERE id = ?`;
+  pool.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error('Error al marcar el documento como no vigente:', err);
+      return res.status(500).json({ message: 'Error al marcar el documento como no vigente' });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Documento no encontrado' });
+    }
+
+    res.status(200).json({ message: 'Documento de Aviso de Privacidad marcado como no vigente exitosamente' });
+  });
+});
+
+
+app.post('/upload-terminos-condiciones', upload.single('file'), (req, res) => {
+  const { validUntil } = req.body;
+
+  if (!req.file) {
+    return res.status(400).json({ message: 'No se ha subido ningún archivo' });
+  }
+
+  const fileData = req.file.buffer; // Archivo binario
+  const createdAt = new Date();     // Fecha de creación
+
+  // Buscar la versión del último documento vigente
+  const getLastVersionSql = `SELECT version FROM terminos_condiciones WHERE deleted = 0 ORDER BY createdAt DESC LIMIT 1`;
+  pool.query(getLastVersionSql, (err, results) => {
+    if (err) {
+      console.error('Error al obtener la última versión:', err);
+      return res.status(500).json({ message: 'Error al obtener la última versión' });
+    }
+
+    let newVersion = "1.0"; // Versión inicial si no hay documentos previos
+    if (results.length > 0 && results[0].version) {
+      newVersion = (parseFloat(results[0].version) + 1.0).toFixed(1); // Incrementar la versión del último documento
+    }
+
+    // Marcar el último documento vigente como no vigente (deleted = 1)
+    const markOldDocumentsSql = `UPDATE terminos_condiciones SET deleted = 1 WHERE deleted = 0 ORDER BY createdAt DESC LIMIT 1`;
+    pool.query(markOldDocumentsSql, (err) => {
+      if (err) {
+        console.error('Error al marcar el documento anterior como no vigente:', err);
+        return res.status(500).json({ message: 'Error al marcar el documento anterior como no vigente' });
+      }
+
+      // Insertar el nuevo documento con la nueva versión
+      const insertNewDocumentSql = `INSERT INTO terminos_condiciones (version, file, createdAt, validUntil, deleted) VALUES (?, ?, ?, ?, 0)`;
+      pool.query(insertNewDocumentSql, [newVersion, fileData, createdAt, validUntil], (err, result) => {
+        if (err) {
+          console.error('Error al guardar el nuevo documento en la base de datos:', err);
+          return res.status(500).json({ message: 'Error al guardar el nuevo documento en la base de datos' });
+        }
+        res.status(200).json({ message: 'Documento de Términos y Condiciones subido exitosamente', documentId: result.insertId, version: newVersion });
+      });
+    });
+  });
+});
+
+
+app.get('/documents-terminos-condiciones', (req, res) => {
+  const sql = `SELECT id, version, createdAt, validUntil, deleted FROM terminos_condiciones`;
+  pool.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error al obtener los documentos de Términos y Condiciones:', err);
+      return res.status(500).json({ message: 'Error al obtener los documentos' });
+    }
+    res.json(results); // Enviar la lista de documentos
+  });
+});
+
+app.get('/documents-terminos-condiciones/:id', (req, res) => {
+  const { id } = req.params;
+
+  const sql = `SELECT file, version FROM terminos_condiciones WHERE id = ?`;
+  pool.query(sql, [id], (err, results) => {
+    if (err) {
+      console.error('Error al obtener el documento:', err);
+      return res.status(500).json({ message: 'Error al obtener el documento' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'Documento no encontrado' });
+    }
+
+    const document = results[0];
+
+    // Configurar los encabezados para la descarga del archivo
+    res.setHeader('Content-Disposition', `attachment; filename="terminos_condiciones_version_${document.version}.pdf"`);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.send(document.file); // Enviar el archivo binario
+  });
+});
+
+app.post('/delete-terminos-condiciones/:id', (req, res) => {
+  const { id } = req.params;
+
+  const sql = `UPDATE terminos_condiciones SET deleted = 1 WHERE id = ?`;
+  pool.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error('Error al marcar el documento como no vigente:', err);
+      return res.status(500).json({ message: 'Error al marcar el documento como no vigente' });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Documento no encontrado' });
+    }
+
+    res.status(200).json({ message: 'Documento de Términos y Condiciones marcado como no vigente exitosamente' });
+  });
+});
+
+// Ruta para descargar el documento de Términos y Condiciones
+app.get('/download-terminos-condiciones', (req, res) => {
+  const sql = 'SELECT file, version FROM terminos_condiciones WHERE deleted = 0 ORDER BY createdAt DESC LIMIT 1';
+  
+  pool.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error al obtener Términos y Condiciones:', err);
+      return res.status(500).json({ message: 'Error al obtener Términos y Condiciones' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'No se encontró un documento vigente' });
+    }
+
+    const document = results[0];
+    res.setHeader('Content-Disposition', `attachment; filename="terminos_condiciones_v${document.version}.pdf"`);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.send(document.file);
+  });
+});
+
+// Ruta para descargar el documento de Política de Privacidad
+app.get('/download-politica-privacidad', (req, res) => {
+  const sql = 'SELECT file, version FROM politica_privacidad WHERE deleted = 0 ORDER BY createdAt DESC LIMIT 1';
+  
+  pool.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error al obtener Política de Privacidad:', err);
+      return res.status(500).json({ message: 'Error al obtener Política de Privacidad' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'No se encontró un documento vigente' });
+    }
+
+    const document = results[0];
+    res.setHeader('Content-Disposition', `attachment; filename="politica_privacidad_v${document.version}.pdf"`);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.send(document.file);
+  });
+});
+
+// Ruta para descargar el documento de Deslinde Legal
+app.get('/download-deslinde-legal', (req, res) => {
+  const sql = 'SELECT file, version FROM deslinde_legal WHERE deleted = 0 ORDER BY createdAt DESC LIMIT 1';
+
+  pool.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error al obtener el documento de Deslinde Legal:', err);
+      return res.status(500).json({ message: 'Error al obtener el documento de Deslinde Legal' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'No se encontró un documento vigente' });
+    }
+
+    const document = results[0];
+    res.setHeader('Content-Disposition', `attachment; filename="deslinde_legal_v${document.version}.pdf"`);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.send(document.file);
   });
 });
 
