@@ -177,51 +177,104 @@ export default {
 </script>
 
 <style scoped>
-.container {
-  max-width: 800px;
-  margin-top: 20px;
-}
+ /* Centrar y agregar márgenes superiores */
+ h2 {
+    margin-top: 20px;
+    margin-bottom: 20px;
+  }
 
-.table {
-  width: 100%;
-  margin-bottom: 20px;
-}
+  /* Estilo para el formulario */
+  form {
+    margin-top: 20px;
+    padding: 30px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+  }
 
-.thead-dark {
-  background-color: #343a40;
-  color: white;
-}
+  /* Espaciado en las tablas */
+  table {
+    margin-top: 20px;
+  }
 
-.table td, .table th {
-  vertical-align: middle;
-  text-align: center;
-}
+  /* Tamaño de los botones en las acciones */
+  table td button, table td a {
+    margin-right: 5px;
+  }
 
-.actions {
-  display: flex;
-  justify-content: space-around;
-  gap: 5px;
-}
+  /* Estilo de hover para las filas */
+  table tbody tr:hover {
+    background-color: #f0f0f0;
+  }
 
-.actions .btn {
-  margin-right: 5px;
-}
+  /* Espaciado inferior en el cuerpo */
+  .container {
+    margin-bottom: 50px;
+  }
 
-.btn {
-  border-radius: 20px;
-}
+  /* Estilo para la tabla */
+  .table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
 
-.form-control {
-  margin-bottom: 10px;
-}
+  .table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+  }
 
-button {
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
+  /* Ajustar márgenes y colores para la tabla */
+  .table-dark {
+    background-color: #343a40;
+    color: white;
+  }
 
-button:hover {
-  opacity: 0.8;
-}
+  .btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+  }
+
+  .btn-info {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+  }
+
+  .btn-info:hover {
+    background-color: #138496;
+    border-color: #117a8b;
+  }
+
+  .btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+  }
+  .container {
+    max-width: 800px;
+    margin-top: 20px;
+  }
+
+  .table td, .table th {
+    vertical-align: middle;
+  }
+
+  .table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  /* Añadir espacio entre los botones en la columna de acciones */
+  .actions-column {
+    white-space: nowrap;
+  }
+
+  .actions-column .btn {
+    margin-bottom: 5px;
+  }
+
+  /* Ajustar el tamaño de los botones para que no se amontonen */
+  .btn-danger, .btn-info {
+    min-width: 100px;
+  }
+
+  /* Aplicar márgenes adicionales entre los botones */
+  .me-2 {
+    margin-right: 8px;
+  }
 </style>
 

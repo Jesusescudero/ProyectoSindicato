@@ -457,7 +457,7 @@ app.post('/upload-aviso-privacidad', upload.single('file'), (req, res) => {
   const fileData = req.file.buffer;
   const createdAt = new Date();
 
-  const getLastVersionSql = `SELECT version FROM aviso_privacidad WHERE deleted = 0 ORDER BY createdAt DESC LIMIT 1`;
+  const getLastVersionSql = `SELECT version FROM politica_privacidad WHERE deleted = 0 ORDER BY createdAt DESC LIMIT 1`;
   pool.query(getLastVersionSql, (err, results) => {
     if (err) {
       console.error('Error al obtener la última versión:', err);
@@ -469,14 +469,14 @@ app.post('/upload-aviso-privacidad', upload.single('file'), (req, res) => {
       newVersion = (parseFloat(results[0].version) + 1.0).toFixed(1);
     }
 
-    const markOldDocumentsSql = `UPDATE aviso_privacidad SET deleted = 1 WHERE deleted = 0 ORDER BY createdAt DESC LIMIT 1`;
+    const markOldDocumentsSql = `UPDATE politica_privacidad SET deleted = 1 WHERE deleted = 0 ORDER BY createdAt DESC LIMIT 1`;
     pool.query(markOldDocumentsSql, (err) => {
       if (err) {
         console.error('Error al marcar el documento anterior como no vigente:', err);
         return res.status(500).json({ message: 'Error al marcar el documento anterior como no vigente' });
       }
 
-      const insertNewDocumentSql = `INSERT INTO aviso_privacidad (version, file, createdAt, validUntil, deleted) VALUES (?, ?, ?, ?, 0)`;
+      const insertNewDocumentSql = `INSERT INTO politica_privacidad (version, file, createdAt, validUntil, deleted) VALUES (?, ?, ?, ?, 0)`;
       pool.query(insertNewDocumentSql, [newVersion, fileData, createdAt, validUntil], (err, result) => {
         if (err) {
           console.error('Error al guardar el nuevo documento en la base de datos:', err);
