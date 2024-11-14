@@ -12,50 +12,21 @@ const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const app = express();
 const multer = require('multer');
-const validator = require('validator'); // Importar validator
-//const csrf = require('csurf');
 
 
 // Middleware
 app.use(cookieParser());
 app.use(express.json());
 
-// Middleware CSRF
-//const csrfProtection = csrf({ cookie: true });
-
-// Rutas donde quieres aplicar la protección CSRF
-//app.use(csrfProtection);
-
-// Ruta para obtener el token CSRF
-/*app.get('/csrf-token', (req, res) => {
-  res.json({ csrfToken: req.csrfToken() });
-);*/
-/*
-app.use((err, req, res, next) => {
-  if (err.code === 'EBADCSRFTOKEN') {
-    // Token CSRF inválido
-    res.status(403).json({ message: 'Token CSRF inválido o faltante' });
-  } else {
-    next(err);
-  }
-});*/
-
 // Configuración de CORS
 const corsOptions = {
-  origin: ['http://localhost:8080', 'https://sututeh.isoftuthh.com'],
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-  
+  origin: ['http://localhost:8080', 'https://sututeh.isoftuthh.com'], // Orígenes permitidos
+  methods: ['GET', 'POST', 'OPTIONS'], // Métodos permitidos
+  allowedHeaders: ['Content-Type', 'Authorization'], // Encabezados permitidos
+  credentials: true // Permitir credenciales (cookies)
 };
 
 app.use(cors(corsOptions)); // Aplicar CORS con las opciones definidas
-
-// Configuración de las rutas y del servidor
-/*app.get('/csrf-token', (req, res) => {
-  // Genera y envía el token CSRF aquí
-  res.json({ csrfToken: 'tu-token-csrf' });
-});*/
 
 // Manejo de solicitudes preflight (OPTIONS)
 app.options('*', cors(corsOptions)); // Usar CORS para manejar las solicitudes preflight
@@ -133,36 +104,6 @@ async function enviarCodigoVerificacion(correo, codigo) {
     return { success: true, message: 'Código de verificación enviado', info };
   } catch (error) {
     console.error('Error al enviar el correo: ', error);
-    return { success: false, message: 'Error al enviar el correo de verificación', error };
-  }
-}
-
-async function enviarEmailVerificacion(correo, userId) {
-  const token = crypto.randomBytes(20).toString('hex');
-  const expiration = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
-
-  // Actualizar el usuario en la base de datos con el token y su expiración
-  await pool.query(
-    'UPDATE users SET email_verification_token = ?, email_verification_expiration = ? WHERE id = ?',
-    [token, expiration, userId]
-  );
-
-  // Crear el correo electrónico con el enlace de verificación
-  const mailOptions = {
-    from: '20221042@uthh.edu.mx',  // Tu correo
-    to: correo,
-    subject: 'Verificación de correo electrónico',
-    text: `Por favor, verifica tu correo electrónico haciendo clic en el siguiente enlace. Este enlace expirará en 15 minutos:
-    http://localhost:8080/verify-email?token=${token}&userId=${userId}`
-  };
-
-  // Enviar el correo utilizando el transporter existente
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Correo de verificación enviado: ', info.response);
-    return { success: true, message: 'Correo de verificación enviado', info };
-  } catch (error) {
-    console.error('Error al enviar el correo de verificación: ', error);
     return { success: false, message: 'Error al enviar el correo de verificación', error };
   }
 }
@@ -761,157 +702,8 @@ app.get('/download-deslinde-legal', (req, res) => {
 });
 
 
-// Funciones de sanitización y validación
-function sanitizeText(text, maxLength = 50) {
-  if (!text || typeof text !== 'string') return '';
-  return validator.escape(text.trim()).substring(0, maxLength);
-}
 
-function isValidEmail(email) {
-  return validator.isEmail(email);
-}
-
-function isValidPhoneNumber(phone) {
-  return validator.isMobilePhone(phone, 'es-MX'); // Ejemplo para números de México
-}
-
-function sanitizeNumber(input, maxLength = 20) {
-  return validator.whitelist(input.toString(), '0-9').substring(0, maxLength);
-}
-
-app.post('/register',  async (req, res) => {
-  const {
-    nombre,
-    apellidoPaterno,
-    apellidoMaterno,
-    telefono,
-    correo,
-    puesto,
-    tieneMaestria,
-    nombreMaestria,
-    tieneDoctorado,
-    nombreDoctorado,
-    estatus,
-    numeroTrabajador,
-    numeroSindicalizado,
-    usuarios,
-    password,
-  } = req.body;
-
-  // Sanitizar entradas
-  const sanitizedNombre = sanitizeText(nombre);
-  const sanitizedApellidoPaterno = sanitizeText(apellidoPaterno);
-  const sanitizedApellidoMaterno = sanitizeText(apellidoMaterno);
-  const sanitizedTelefono = sanitizeNumber(telefono, 10);
-  const sanitizedCorreo = correo.trim().toLowerCase();
-  const sanitizedPuesto = sanitizeText(puesto, 100);
-  const sanitizedNumeroTrabajador = sanitizeNumber(numeroTrabajador);
-  const sanitizedNumeroSindicalizado = sanitizeNumber(numeroSindicalizado);
-  const sanitizedUsuarios = sanitizeText(usuarios, 30);
-  const sanitizedPassword = password.trim();
-
-  // Validar campos requeridos
-  if (!sanitizedUsuarios || !sanitizedPassword || !sanitizedNombre || !sanitizedApellidoPaterno || !sanitizedApellidoMaterno || !sanitizedTelefono || !sanitizedCorreo || !sanitizedPuesto) {
-    return res.status(400).send('Todos los campos son requeridos.');
-  }
-
-  // Validaciones específicas
-  // Validar nombre y apellidos
-  if (!/^[a-zA-Z\s]+$/.test(sanitizedNombre) || sanitizedNombre.length < 2 || sanitizedNombre.length > 50) {
-    return res.status(400).send('Nombre inválido. Debe contener solo letras y tener entre 2 y 50 caracteres.');
-  }
-  if (!/^[a-zA-Z\s]+$/.test(sanitizedApellidoPaterno) || sanitizedApellidoPaterno.length < 2 || sanitizedApellidoPaterno.length > 50) {
-    return res.status(400).send('Apellido paterno inválido. Debe contener solo letras y tener entre 2 y 50 caracteres.');
-  }
-  if (!/^[a-zA-Z\s]*$/.test(sanitizedApellidoMaterno) || sanitizedApellidoMaterno.length > 50) {
-    return res.status(400).send('Apellido materno inválido. Debe contener solo letras y tener hasta 50 caracteres.');
-  }
-
-  // Validar teléfono
-  if (!isValidPhoneNumber(sanitizedTelefono)) {
-    return res.status(400).send('Teléfono inválido. Debe ser un número de 10 dígitos.');
-  }
-
-  // Validar correo electrónico
-  if (!isValidEmail(sanitizedCorreo)) {
-    return res.status(400).send('Correo electrónico inválido.');
-  }
-
-  // Validar puesto
-  if (!/^[a-zA-Z\s]+$/.test(sanitizedPuesto) || sanitizedPuesto.length < 2 || sanitizedPuesto.length > 100) {
-    return res.status(400).send('Puesto inválido. Debe contener solo letras y tener entre 2 y 100 caracteres.');
-  }
-
-  // Validar estatus
-  const validEstatus = ['Titulado', 'Pasante'];
-  if (!validEstatus.includes(estatus)) {
-    return res.status(400).send(`Estatus inválido. Debe ser uno de los siguientes: ${validEstatus.join(', ')}`);
-  }
-
-  // Validar número de trabajador y sindicalizado
-  if (!/^\d+$/.test(sanitizedNumeroTrabajador) || sanitizedNumeroTrabajador.length < 1 || sanitizedNumeroTrabajador.length > 20) {
-    return res.status(400).send('Número de trabajador inválido. Debe ser un número.');
-  }
-  if (!/^\d+$/.test(sanitizedNumeroSindicalizado) || sanitizedNumeroSindicalizado.length < 1 || sanitizedNumeroSindicalizado.length > 20) {
-    return res.status(400).send('Número de sindicalizado inválido. Debe ser un número.');
-  }
-
-  // Validación de la fortaleza de la contraseña
-  const passwordStrength = zxcvbn(sanitizedPassword);
-  if (passwordStrength.score < 3) {
-    return res.status(400).send('La contraseña es demasiado débil.');
-  }
-
-  // Verificar si la contraseña ha sido comprometida usando HIBP
-  try {
-    const pwnedCount = await pwnedPassword(sanitizedPassword);
-    if (pwnedCount > 0) {
-      return res.status(400).send(`La contraseña ha sido comprometida en ${pwnedCount} filtraciones. Por favor, elige una diferente.`);
-    }
-  } catch (error) {
-    console.error('Error al verificar la contraseña en HIBP:', error);
-    return res.status(500).send('Error al verificar la seguridad de la contraseña.');
-  }
-
-  // Encriptar contraseña
-  bcrypt.hash(sanitizedPassword, 10, (err, hash) => {
-    if (err) return res.status(500).send('Error al encriptar la contraseña');
-
-    const sql = `INSERT INTO users 
-    (nombre, apellido_paterno, apellido_materno, telefono, correo, puesto, tiene_maestria, maestrias, tiene_doctorado, doctorados, esta_titulado, numero_trabajador, numero_sindicalizado, usuarios, password) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-
-    pool.query(sql, [
-      sanitizedNombre, sanitizedApellidoPaterno, sanitizedApellidoMaterno, sanitizedTelefono, sanitizedCorreo, sanitizedPuesto,
-      tieneMaestria, sanitizeText(nombreMaestria), tieneDoctorado, sanitizeText(nombreDoctorado), estatus,
-      sanitizedNumeroTrabajador, sanitizedNumeroSindicalizado, sanitizedUsuarios, hash
-    ], (err, result) => {
-      if (err) {
-        if (err.code === 'ER_DUP_ENTRY') {
-          return res.status(400).send('El usuario ya está registrado.');
-        }
-        console.error('Error en la consulta a la base de datos:', err);
-        return res.status(500).send('Error en la base de datos');
-      }
-      //res.status(200).send('Usuario registrado con éxito');
-
-      const userId = result.insertId;
-      // Llamar a la función de envío de correo de verificación
-      enviarEmailVerificacion(sanitizedCorreo, userId)
-        .then((emailResult) => {
-          if (!emailResult.success) {
-            return res.status(500).send('Error al enviar el correo de verificación');
-          }
-          return res.status(200).send('Usuario registrado con éxito. Se ha enviado un correo de verificación.');
-        })
-        .catch((error) => {
-          console.error('Error al enviar el correo de verificación:', error);
-          return res.status(500).send('Error al enviar el correo de verificación');
-        });
-    });
-  });
-});
-/*// Ruta de registro sin reCAPTCHA
+// Ruta de registro sin reCAPTCHA
 app.post('/register', async (req, res) => {
 
   const {
@@ -1028,7 +820,7 @@ app.post('/register', async (req, res) => {
       res.status(200).send('Usuario registrado con éxito');
     });
   });
-});*/
+});
 
 // Ruta protegida para administradores
 app.get('/admin-dashboard', verifyAdmin, (req, res) => {
@@ -1044,19 +836,6 @@ app.get('/user-dashboard', verifyUser, (req, res) => {
 app.post('/login', (req, res) => {
   const { usuarios, password, recaptchaToken } = req.body;
 
-   // Verificación básica de entradas
-   if (!usuarios || !password || !recaptchaToken) {
-    return res.status(400).json({ message: 'Todos los campos son requeridos.' });
-  }
-
-  // Sanitización del usuario
-  const sanitizedUsuarios = validator.escape(usuarios.trim());
-
-  // Validar longitud y formato de usuario (e.g., longitud mínima de 4 caracteres)
-  if (sanitizedUsuarios.length < 4 || sanitizedUsuarios.length > 50) {
-    return res.status(400).json({ message: 'Credenciales incorrectas.' });
-  }
-
   // Verificar el token reCAPTCHA con Google
   const secretKey = '6LdkUWIqAAAAALb-T3v7NgI8esXjmpdwns3jG729'; // Reemplazar con tu clave secreta de reCAPTCHA
   const verificationUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaToken}`;
@@ -1064,21 +843,21 @@ app.post('/login', (req, res) => {
   axios.post(verificationUrl)
     .then(response => {
       if (!response.data.success) {
-        return res.status(400).json({ message: 'Error de autenticación. Inténtalo nuevamente.' });
+        return res.status(400).send('reCAPTCHA fallido. Inténtalo nuevamente.');
       }
 
       // Si reCAPTCHA es válido, continuar con el proceso de inicio de sesión
       const sql = 'SELECT * FROM users WHERE usuarios = ?';
       pool.query(sql, [usuarios], (err, results) => {
         if (err || results.length === 0) {
-          return res.status(400).json({ message: 'Usuario no encontrado.' });
+          return res.status(400).send('Usuario no encontrado');
         }
 
         const user = results[0];
 
         // Verificar si la cuenta está bloqueada
         if (user.bloqueadoHasta && new Date(user.bloqueadoHasta) > new Date()) {
-          return res.status(403).json({ message: 'Cuenta temporalmente bloqueada. Inténtalo más tarde.' });
+          return res.status(403).send('Cuenta bloqueada. Intenta de nuevo más tarde.');
         }
 
         // Comparar contraseñas
@@ -1097,22 +876,22 @@ app.post('/login', (req, res) => {
             const sqlUpdate = 'UPDATE users SET intentosFallidos = ?, bloqueadoHasta = ? WHERE usuarios = ?';
             pool.query(sqlUpdate, [intentosFallidos, bloqueadoHasta, usuarios], (err) => {
               if (err) {
-                return res.status(500).json({ message: 'Error en el servidor.' });
+                return res.status(500).send('Error al actualizar los intentos fallidos.');
               }
-              return res.status(400).json({ message: 'Credenciales incorrectas.' });
+              return res.status(400).send('Contraseña incorrecta');
             });
           } else {
             // Reiniciar intentos fallidos y bloqueos si la contraseña es correcta
             const sqlReset = 'UPDATE users SET intentosFallidos = 0, bloqueadoHasta = NULL WHERE usuarios = ?';
             pool.query(sqlReset, [usuarios], (err) => {
               if (err) {
-                return res.status(500).json({ message: 'Error al reiniciar los intentos fallidos.' });
+                return res.status(500).send('Error al reiniciar los intentos fallidos.');
               }
 
               // Regenerar la sesión después de un inicio de sesión exitoso
               req.session.regenerate(function (err) {
                 if (err) {
-                  return res.status(500).json({ message: 'Error al regenerar la sesion.' });
+                  return res.status(500).send('Error al regenerar la sesión.');
                 }
                 console.log('ID de sesión generado:', req.sessionID);
 

@@ -36,13 +36,12 @@ export default {
         facebook: '',
         instagram: ''
       },
-      activeDocuments: [],   // Documentos vigentes
-      success: true,         // Para indicar si la consulta fue exitosa
+      
     };
   },
   created() {
     this.fetchCompanyData();     // Llamar a la función al crear el componente
-    this.fetchActiveDocuments(); // Llamar a la función para obtener documentos vigentes
+    
   },
   methods: {
     async fetchCompanyData() {
@@ -65,18 +64,7 @@ export default {
         console.error("Error al obtener los datos de la empresa:", error);
       }
     },
-    async fetchActiveDocuments() {
-      try {
-        const response = await axios.get('https://proyectosin.onrender.com/documents-vigentes');
-        if (response.status === 200) {
-          this.activeDocuments = response.data;
-        } else {
-          console.error('Error al obtener documentos vigentes:', response.data.message);
-        }
-      } catch (error) {
-        console.error('Error al obtener documentos vigentes:', error);
-      }
-    }
+    
   }
 };
 </script>
