@@ -27,7 +27,7 @@
           <button type="submit" class="btn btn-success w-100">Verificar Código</button>
         </form>
 
-        <p v-if="errorMessage" class="text-danger text-center mt-3">{{ errorMessage }}</p>
+        <p v-if="errorMessage" class="text-danger text-center mt-3">{{ sanitizedErrorMessage }}</p>
 
         <!-- Mensaje de error -->
         
@@ -43,6 +43,7 @@
 <script>
 /* global grecaptcha */
 import axios from 'axios';
+import validator from 'validator';
 
 
 export default {
@@ -55,6 +56,12 @@ export default {
       errorMessage: '',
       isVerifying: false,
     };
+  },
+  computed: {
+    // Escapa el mensaje de error para prevenir posibles XSS
+    sanitizedErrorMessage() {
+      return validator.escape(this.errorMessage);
+    },
   },
   mounted() {
     const recaptchaScript = document.createElement('script');
@@ -70,6 +77,13 @@ export default {
 
         if (!recaptchaToken) {
           this.errorMessage = 'Por favor completa el reCAPTCHA';
+          return;
+        }
+
+        // Validar username y password
+        if (!this.isValidUsername(this.username) || !this.isValidPassword(this.password)) {
+          this.errorMessage = 'Usuario o contraseña inválidos.';
+          grecaptcha.reset(); // Reiniciar el reCAPTCHA en caso de error
           return;
         }
 
@@ -103,8 +117,16 @@ export default {
         } else {
           this.errorMessage = 'Error en la configuración de la solicitud: ' + error.message;
         }
+        grecaptcha.reset();
         console.error('Error en el inicio de sesión:', error);
       }
+    },
+    isValidUsername(username) {
+      return validator.isLength(username, { min: 4, max: 50 }) && validator.isAlphanumeric(username);
+    },
+
+    isValidPassword(password) {
+      return validator.isLength(password, { min: 8 });
     },
     
     async verifyCode() {

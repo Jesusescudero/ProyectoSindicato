@@ -9,6 +9,7 @@ import DocumentManager from './components/DocumentManager.vue';
 import LegalDisclaimerManager from './components/LegalDisclaimer.vue';
 import TermsAndConditions from './components/TermsAndConditions.vue';
 import CompanySettings from './components/CompanySettings.vue';
+import VerifyEmail from './components/VerifyEmail.vue';
 import { jwtDecode } from 'jwt-decode'; // Importa jwt_decode para manejar el token
 
 const routes = [
@@ -67,6 +68,11 @@ const routes = [
     name: 'NewPassword',
     component: NewPassword,  // El componente donde se ingresa la nueva contraseña
     props: (route) => ({ token: route.query.token })  // Pasar el token de la URL al componente
+  },
+  {
+    path: '/verify-email',
+    name: 'VerifyEmail',
+    component: VerifyEmail,
   }
 ];
 

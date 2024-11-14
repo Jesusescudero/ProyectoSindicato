@@ -114,7 +114,8 @@
 
                     <div class="mb-3">
                         <label for="password" class="form-label">Contraseña</label>
-                        <input type="password" id="password" v-model="password" @input="evaluatePassword" class="form-control" required />
+                        <input type="password" id="password" v-model="password" @input="evaluatePassword"
+                            class="form-control" required />
                         <div :style="{ width: passwordStrengthBarWidth }" class="password-strength-bar mt-2"></div>
                         <p v-if="passwordStrengthMessage" class="text-info">{{ passwordStrengthMessage }}</p>
                         <p v-if="passwordTooWeakMessage" class="text-danger">{{ passwordTooWeakMessage }}</p>
@@ -122,7 +123,8 @@
 
                     <div class="mb-3">
                         <label for="confirmPassword" class="form-label">Confirmar Contraseña</label>
-                        <input type="password" id="confirmPassword" v-model="confirmPassword" @input="checkPasswordsMatch" class="form-control" required />
+                        <input type="password" id="confirmPassword" v-model="confirmPassword"
+                            @input="checkPasswordsMatch" class="form-control" required />
                         <p v-if="passwordMismatchMessage" class="text-danger">{{ passwordMismatchMessage }}</p>
                     </div>
 
@@ -174,7 +176,7 @@ export default {
             isPasswordStrong: false,
             passwordsMatch: true,
             passwordMismatchMessage: '',
-            
+
             firstNameError: '',
             lastNameError: '',
             motherLastNameError: '',
@@ -185,12 +187,19 @@ export default {
             employeeNumberError: '',
             unionNumberError: '',
             step: 1,
+            csrfToken: '',
         };
     },
 
+    
     methods: {
 
+        sanitizeInput(input) {
+            return input.replace(/[<>/\\{}()"'`]/g, ''); // Elimina caracteres peligrosos
+        },
 
+
+        // Manejo del cambio de paso
         nextStep() {
             if (this.step === 1) {
                 if (this.validateStep1()) {
@@ -200,15 +209,20 @@ export default {
                 if (this.validateStep2()) {
                     this.step++;
                 }
+            } else if (this.step === 3) {
+                if (this.validateStep3()) {
+                    this.handleSubmit(); // Llama a la función de envío de datos si se validó el último paso
+                }
             }
         },
         previousStep() {
-    if (this.step > 1) {
-      this.step--;
-    }
-  },
+            if (this.step > 1) {
+                this.step--;
+            }
+        },
 
         // Validaciones del primer paso
+        // Validaciones y sanitización del primer paso
         validateStep1() {
             // Resetear errores
             this.firstNameError = '';
@@ -217,31 +231,34 @@ export default {
             this.phoneNumberError = '';
             this.emailError = '';
 
-            // Validar nombre
+            // Sanitizar las entradas antes de validar
+            this.firstName = this.sanitizeInput(this.firstName);
+            this.lastName = this.sanitizeInput(this.lastName);
+            this.motherLastName = this.sanitizeInput(this.motherLastName);
+            this.phoneNumber = this.sanitizeInput(this.phoneNumber);
+            this.email = this.sanitizeInput(this.email);
+
+            // Validaciones
             if (!/^[a-zA-Z\s]+$/.test(this.firstName) || this.firstName.length < 2 || this.firstName.length > 50) {
                 this.firstNameError = 'Nombre inválido. Debe contener solo letras y tener entre 2 y 50 caracteres.';
                 return false;
             }
 
-            // Validar apellido paterno
             if (!/^[a-zA-Z\s]+$/.test(this.lastName) || this.lastName.length < 2 || this.lastName.length > 50) {
                 this.lastNameError = 'Apellido paterno inválido. Debe contener solo letras y tener entre 2 y 50 caracteres.';
                 return false;
             }
 
-            // Validar apellido materno (opcional)
             if (!/^[a-zA-Z\s]*$/.test(this.motherLastName) || this.motherLastName.length > 50) {
                 this.motherLastNameError = 'Apellido materno inválido. Debe contener solo letras y tener hasta 50 caracteres.';
                 return false;
             }
 
-            // Validar teléfono
             if (!/^\d{10}$/.test(this.phoneNumber)) {
                 this.phoneNumberError = 'Teléfono inválido. Debe ser un número de 10 dígitos.';
                 return false;
             }
 
-            // Validar correo electrónico
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email)) {
                 this.emailError = 'Correo electrónico inválido.';
                 return false;
@@ -250,33 +267,59 @@ export default {
             return true; // Si todas las validaciones pasan
         },
 
-        // Validaciones del segundo paso
+        // Validaciones y sanitización del segundo paso
         validateStep2() {
-            // Validar puesto
+            this.position = this.sanitizeInput(this.position);
+            this.employeeNumber = this.sanitizeInput(this.employeeNumber);
+            this.unionNumber = this.sanitizeInput(this.unionNumber);
+
             if (!/^[a-zA-Z\s]+$/.test(this.position) || this.position.length < 2 || this.position.length > 100) {
                 alert('Puesto inválido. Debe contener solo letras y tener entre 2 y 100 caracteres.');
                 return false;
             }
 
-            // Validar si está titulado o es pasante
             if (this.isGraduated !== 'Titulado' && this.isGraduated !== 'Pasante') {
                 alert('Debe seleccionar si está titulado o es pasante.');
                 return false;
             }
 
-            // Validar número de trabajador
             if (!/^\d+$/.test(this.employeeNumber) || this.employeeNumber.length < 1 || this.employeeNumber.length > 20) {
                 alert('Número de trabajador inválido. Debe ser un número.');
                 return false;
             }
 
-            // Validar número de sindicalizado
             if (!/^\d+$/.test(this.unionNumber) || this.unionNumber.length < 1 || this.unionNumber.length > 20) {
                 alert('Número de sindicalizado inválido. Debe ser un número.');
                 return false;
             }
 
             return true; // Si todas las validaciones pasan
+        },
+
+        // Validaciones y sanitización del tercer paso (usuario y contraseña)
+        validateStep3() {
+            this.username = this.sanitizeInput(this.username);
+
+            if (!this.username || this.username.length < 4) {
+                alert('El nombre de usuario debe tener al menos 4 caracteres.');
+                return false;
+            }
+
+            // Verificación de contraseña (ya tienes esta lógica en evaluatePassword)
+            this.evaluatePassword();
+            if (!this.isPasswordStrong) {
+                this.errorMessage = 'La contraseña es demasiado débil.';
+                return false;
+            }
+
+            // Verificar si las contraseñas coinciden
+            this.checkPasswordsMatch();
+            if (!this.passwordsMatch) {
+                this.errorMessage = 'Las contraseñas no coinciden.';
+                return false;
+            }
+
+            return true;
         },
 
 
@@ -423,13 +466,25 @@ export default {
                     usuarios: this.username,
                     password: this.password,
 
-                });
+                },
+                    {
+                        headers: {
+                            'X-CSRF-Token': this.csrfToken, // Incluir el token CSRF en los encabezados
+                        },
+                        withCredentials: true, // Permitir el envío de cookies
+                    }
+                );
                 console.log(response.data);
 
                 if (response.status === 200) {
-                    this.successMessage = 'Registro exitoso. ¡Bienvenido!';
+                    this.successMessage = 'Registro exitoso. Se ha enviado un correo de verificación.';
                     this.errorMessage = '';
                     this.resetForm(); // Opcional: Resetear el formulario
+
+                    // Redirigir al usuario a la página de inicio de sesión después de unos segundos
+                    setTimeout(() => {
+                        this.$router.push('/login');
+                    }, 3000); // 3 segundos de retraso antes de redirigir
                 }
             } catch (error) {
                 if (error.response?.data.includes('comprometida')) {
@@ -504,8 +559,9 @@ export default {
 }
 
 .card {
-  animation: fadeIn 1s;
+    animation: fadeIn 1s;
 }
+
 .btn {
     padding: 10px 20px;
     font-size: 16px;
@@ -526,42 +582,46 @@ export default {
     border-color: #007bff;
 }
 
-.btn-primary, .btn-secondary, .btn-success {
-    width: 48%; /* Hace que los botones ocupen la mitad del espacio cada uno */
+.btn-primary,
+.btn-secondary,
+.btn-success {
+    width: 48%;
+    /* Hace que los botones ocupen la mitad del espacio cada uno */
     text-align: center;
 }
 
 .password-strength-bar {
-  height: 5px;
-  background-color: green;
+    height: 5px;
+    background-color: green;
 }
 
 .animate__fadeIn {
-  animation: fadeIn 0.5s ease-in-out;
+    animation: fadeIn 0.5s ease-in-out;
 }
 
 @keyframes fadeIn {
-  0% {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+    0% {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .error-message {
-  color: red;
-  font-size: 0.9rem;
+    color: red;
+    font-size: 0.9rem;
 }
 
 .success-message {
-  color: green;
-  font-size: 1rem;
+    color: green;
+    font-size: 1rem;
 }
 
 .text-info {
-  font-size: 0.9rem;
+    font-size: 0.9rem;
 }
 </style>
