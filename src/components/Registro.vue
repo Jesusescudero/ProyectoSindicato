@@ -467,12 +467,7 @@ export default {
                     password: this.password,
 
                 },
-                    {
-                        headers: {
-                            'X-CSRF-Token': this.csrfToken, // Incluir el token CSRF en los encabezados
-                        },
-                        withCredentials: true, // Permitir el envío de cookies
-                    }
+                    
                 );
                 console.log(response.data);
 

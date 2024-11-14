@@ -44,9 +44,9 @@ app.use((err, req, res, next) => {
 const corsOptions = {
   origin: ['http://localhost:8080', 'https://sututeh.isoftuthh.com'],
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
-  optionsSuccessStatus: 200
+  
 };
 
 app.use(cors(corsOptions)); // Aplicar CORS con las opciones definidas
@@ -779,7 +779,7 @@ function sanitizeNumber(input, maxLength = 20) {
   return validator.whitelist(input.toString(), '0-9').substring(0, maxLength);
 }
 
-app.post('/register', csrfProtection, async (req, res) => {
+app.post('/register',  async (req, res) => {
   const {
     nombre,
     apellidoPaterno,
