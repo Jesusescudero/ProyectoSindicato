@@ -20,7 +20,7 @@
 
         <form v-if="isVerifying" @submit.prevent="verifyCode" class="shadow p-4 rounded bg-light mt-4">
           <div class="form-group mb-3">
-            <label for="verificationCode" class="form-label">Código de Verificación</label>
+            <label for="verificationCode" class="form-label">Ingresa el código de Verificación enviado a tu correo</label>
             <input type="text" id="verificationCode" v-model="verificationCode" class="form-control input-field"
               required />
           </div>
@@ -33,6 +33,9 @@
         
         <!-- Botón de restablecer contraseña si la cuenta está bloqueada -->
         <p v-if="errorMessage === 'La cuenta está bloqueada. Inténtalo más tarde.'" class="text-center mt-3">
+         
+        </p>
+        <p v-if="!isVerifying" class="text-center mt-3">
           <button @click="goToResetPassword" class="btn btn-link">¿Olvidaste tu contraseña?</button>
         </p>
       </div>

@@ -701,6 +701,115 @@ app.get('/download-deslinde-legal', (req, res) => {
   });
 });
 
+app.get('/puestos', (req, res) => {
+  console.log('Solicitud recibida para /puestos');
+  const sql = 'SELECT id, nombre FROM puestos';
+  pool.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error al obtener los puestos:', err);
+      return res.status(500).json({ message: 'Error al obtener los puestos.' });
+    }
+    console.log('Resultados:', results);
+    res.status(200).json(results);
+  });
+});
+
+app.post('/guardar-temporal', (req, res) => {
+  const { nombre, apellidoPaterno, apellidoMaterno, telefono, correo } = req.body;
+
+  // Validar campos requeridos
+  if (!nombre || !apellidoPaterno || !apellidoMaterno || !telefono || !correo) {
+    return res.status(400).send('Todos los campos son obligatorios.');
+  }
+
+  // Validar formato del correo electrónico
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+    return res.status(400).send('Correo electrónico inválido.');
+  }
+
+  // Generar un código de verificación aleatorio (6 dígitos)
+  const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiracion = new Date();
+  expiracion.setMinutes(expiracion.getMinutes() + 15); // Código válido por 15 minutos
+
+  const query = `
+    INSERT INTO usuarios_temporales (nombre, apellido_paterno, apellido_materno, telefono, correo, codigo_verificacion, codigo_expiracion) 
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  // Ejecutar la query con callback
+  pool.query(query, [nombre, apellidoPaterno, apellidoMaterno, telefono, correo, codigo, expiracion], (error) => {
+    if (error) {
+      console.error('Error al ejecutar la consulta:', error);
+
+      if (error.code === 'ER_DUP_ENTRY') {
+        return res.status(400).send('El correo ya fue registrado previamente.');
+      }
+
+      return res.status(500).send('Error al guardar datos.');
+    }
+
+    // Enviar el correo electrónico si la query fue exitosa
+    transporter.sendMail({
+      from: '20221042@uthh.edu.mx', // Correo remitente
+      to: correo, // Correo destinatario
+      subject: 'Código de verificación', // Asunto del correo
+      text: `Tu código de verificación es: ${codigo}`, // Contenido del correo
+    }, (error, info) => {
+      if (error) {
+        console.error('Error al enviar el correo:', error);
+        return res.status(500).send('Error al enviar el correo de verificación.');
+      }
+
+      console.log('Correo enviado:', info.response);
+      res.status(200).send('Código de verificación enviado con éxito.');
+    });
+  });
+});
+
+
+
+
+app.post('/validar-codigo', (req, res) => {
+  const { correo, codigo } = req.body;
+
+  // Validar que se recibieron el correo y el código
+  if (!correo || !codigo) {
+    return res.status(400).send('Correo y código son obligatorios.');
+  }
+
+  // Consultar la base de datos para verificar el código y su expiración
+  pool.query(
+    'SELECT codigo_verificacion, codigo_expiracion FROM usuarios_temporales WHERE correo = ?',
+    [correo],
+    (err, results) => {
+      if (err) {
+        console.error('Error al consultar la base de datos:', err);
+        return res.status(500).send('Error al validar el código.');
+      }
+
+      // Si no se encuentra el correo en la base de datos
+      if (results.length === 0) {
+        return res.status(404).send('Correo no encontrado.');
+      }
+
+      const { codigo_verificacion, codigo_expiracion } = results[0];
+
+      // Validar si el código coincide
+      if (codigo !== codigo_verificacion) {
+        return res.status(400).send('El código es incorrecto.');
+      }
+
+      // Validar si el código ha expirado
+      if (new Date() > new Date(codigo_expiracion)) {
+        return res.status(400).send('El código ha expirado.');
+      }
+
+      // Código válido: permitir avanzar al siguiente paso
+      return res.status(200).send('Código verificado con éxito.');
+    }
+  );
+});
 
 
 // Ruta de registro sin reCAPTCHA

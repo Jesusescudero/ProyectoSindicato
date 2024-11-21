@@ -112,65 +112,131 @@ export default {
 
 
 <style scoped>
+/* Estilo general del encabezado */
 header {
-  background-color: #049206;
-  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #008000; /* Fondo verde */
   padding: 20px;
+  text-align: center;
+  gap: 10px; /* Espaciado uniforme */
 }
 
-nav {
-  margin: 10px 0;
-}
-
-nav a {
-  margin: 0 15px;
-  color: white;
-  text-decoration: none;
-}
-
-nav a:hover {
-  text-decoration: underline;
-}
-
-button {
-  background-color: #ff4c4c; /* Color para el botón de cerrar sesión */
-  color: white;
-  border: none;
-  padding: 10px;
-  cursor: pointer;
-}
-
-button:hover {
-  background-color: #e03a3a; /* Color al pasar el ratón */
-}
+/* Contenedor del contenido principal */
 .header-content {
-  position: relative;            /* Para poder posicionar el logo sin afectar el contenido */
-  text-align: center;            /* Centra el texto en el contenedor */
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 15px; /* Espaciado entre logo y texto */
+  position: relative;
 }
 
+/* Logo de la empresa */
 .company-logo {
-  position: absolute;            /* Hace que el logo no interfiera con el contenido centrado */
-  left: 20px;                    /* Alinea el logo a la izquierda con un margen */
-  max-width: 80px;               /* Tamaño más pequeño */
-  height: 80px;                  /* Altura fija */
-  border-radius: 50%;            /* Hacer el logo redondo */
-  object-fit: cover;             /* Asegurar que la imagen no se deforme */
+  max-width: 80px; /* Tamaño máximo del logo */
+  height: auto;
+  border-radius: 50%; /* Logo redondeado */
+  object-fit: cover;
 }
 
+/* Contenedor del texto */
 .text-container {
+  flex: 1; /* Permite que el texto ocupe todo el espacio restante */
   text-align: center;
 }
 
 .company-name {
   font-size: 2rem;
   margin: 0;
+  color: white;
 }
 
 .company-slogan {
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-style: italic;
-  margin-top: 5px;
   color: #e0e0e0;
 }
+
+/* Navegación */
+nav {
+  display: flex;
+  flex-wrap: wrap; /* Permite que los enlaces se ajusten automáticamente */
+  justify-content: center;
+  gap: 15px; /* Espaciado uniforme entre enlaces */
+}
+
+nav a {
+  color: white;
+  text-decoration: none;
+  font-size: 1rem;
+  padding: 5px 10px;
+  border: 1px solid transparent; /* Sin bordes por defecto */
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+nav a:hover {
+  background-color: white;
+  color: #008000;
+  border-color: #008000;
+}
+
+/* Botón de cerrar sesión */
+button {
+  background-color: #ff4c4c; /* Color para el botón */
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  font-size: 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #e03a3a;
+}
+
+/* Consultas de medios para pantallas pequeñas */
+@media (max-width: 768px) {
+  /* Ajustes para el contenido principal */
+  .header-content {
+    flex-direction: column; /* Logo y texto apilados */
+    align-items: center;
+  }
+
+  .company-logo {
+    max-width: 60px; /* Logo más pequeño en pantallas pequeñas */
+  }
+
+  .company-name {
+    font-size: 1.5rem; /* Tamaño de texto reducido */
+  }
+
+  .company-slogan {
+    font-size: 0.9rem;
+  }
+
+  /* Navegación adaptativa */
+  nav {
+    flex-direction: column; /* Enlaces apilados */
+    gap: 10px; /* Espaciado menor */
+  }
+
+  nav a {
+    font-size: 0.9rem;
+    padding: 8px;
+  }
+
+  /* Botón de cerrar sesión */
+  button {
+    font-size: 0.9rem;
+    padding: 8px;
+  }
+}
+
 </style>
 

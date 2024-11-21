@@ -9,49 +9,79 @@
 
                     <div class="mb-3">
                         <label for="firstName" class="form-label">Nombre</label>
-                        <input type="text" id="firstName" v-model="firstName" class="form-control" required />
+                        <input type="text" id="firstName" v-model="firstName" @input="validateFirstName"
+                            class="form-control" required />
                         <p v-if="firstNameError" class="text-danger">{{ firstNameError }}</p>
                     </div>
 
                     <div class="mb-3">
                         <label for="lastName" class="form-label">Apellido Paterno</label>
-                        <input type="text" id="lastName" v-model="lastName" class="form-control" required />
+                        <input type="text" id="lastName" v-model="lastName" @input="validateLastName"
+                            class="form-control" required />
                         <p v-if="lastNameError" class="text-danger">{{ lastNameError }}</p>
                     </div>
 
                     <div class="mb-3">
                         <label for="motherLastName" class="form-label">Apellido Materno</label>
-                        <input type="text" id="motherLastName" v-model="motherLastName" class="form-control" required />
+                        <input type="text" id="motherLastName" v-model="motherLastName" @input="validateMotherLastName"
+                            class="form-control" required />
                         <p v-if="motherLastNameError" class="text-danger">{{ motherLastNameError }}</p>
                     </div>
 
                     <div class="mb-3">
                         <label for="phoneNumber" class="form-label">Número de Teléfono</label>
-                        <input type="tel" id="phoneNumber" v-model="phoneNumber" class="form-control" required />
+                        <input type="tel" id="phoneNumber" v-model="phoneNumber" @input="validatePhoneNumber"
+                            class="form-control" required />
                         <p v-if="phoneNumberError" class="text-danger">{{ phoneNumberError }}</p>
                     </div>
 
                     <div class="mb-3">
                         <label for="email" class="form-label">Correo Electrónico</label>
-                        <input type="email" id="email" v-model="email" class="form-control" required />
+                        <input type="email" id="email" v-model="email" @input="validateEmail" class="form-control"
+                            required />
                         <p v-if="emailError" class="text-danger">{{ emailError }}</p>
                     </div>
 
                     <button type="button" class="btn btn-primary w-100" @click="nextStep">Siguiente</button>
                 </div>
 
+                <div v-if="step === 1.5" class="animate__animated animate__fadeIn">
+                    <h4 class="mb-3">Verificación de Correo</h4>
+                    <p>Por favor, introduce el código de verificación enviado a tu correo electrónico.</p>
+
+                    <div class="mb-3">
+                        <label for="verificationCode" class="form-label">Código de Verificación</label>
+                        <input type="text" id="verificationCode" v-model="verificationCode" class="form-control"
+                            maxlength="6" required />
+                        <p v-if="verificationError" class="text-danger">{{ verificationError }}</p>
+                    </div>
+
+
+                    <button type="button" class="btn btn-secondary w-100 mt-3" @click="previousStep">Regresar</button>
+                    <button type="button" class="btn btn-primary w-100" @click="validateVerificationCode">Validar
+                        Código</button>
+                </div>
+
+
+
                 <div v-if="step === 2" class="animate__animated animate__fadeIn">
                     <h4 class="mb-3">Información Académica</h4>
 
-                    <div class="mb-3">
-                        <label for="position" class="form-label">Puesto</label>
-                        <input type="text" id="position" v-model="position" class="form-control" required />
-                        <p v-if="positionError" class="text-danger">{{ positionError }}</p>
-                    </div>
+                    <!-- Dropdown dinámico para seleccionar el puesto -->
+                    <select id="position" v-model="selectedPosition" class="form-select" @change="validatePosition"
+                        required>
+                        <option disabled value="">Seleccione un puesto</option>
+                        <option v-for="puesto in puestos" :key="puesto.id" :value="puesto.id">
+                            {{ puesto.nombre }}
+                        </option>
+                    </select>
+                    <p v-if="errorPosition" class="text-danger">{{ errorPosition }}</p>
+
 
                     <div class="mb-3">
                         <label for="hasMaster" class="form-label">¿Tiene Maestría?</label>
-                        <select id="hasMaster" v-model="hasMaster" class="form-select" required>
+                        <select id="hasMaster" v-model="hasMaster" @change="handleHasMasterChange" class="form-select"
+                            required>
                             <option value="no">No</option>
                             <option value="si">Sí</option>
                         </select>
@@ -59,26 +89,34 @@
 
                     <div v-if="hasMaster === 'si'" class="mb-3">
                         <label for="masterName" class="form-label">Nombre de la Maestría</label>
-                        <input type="text" id="masterName" v-model="masterName" class="form-control" />
+                        <input type="text" id="masterName" v-model="masterName" @input="validateMasterName"
+                            @focus="masterNameTouched = true" class="form-control" />
+                        <p v-if="masterNameError" class="text-danger">{{ masterNameError }}</p>
                     </div>
 
-                    <div class="mb-3">
+                    <div v-if="hasMaster === 'si'" class="mb-3">
                         <label for="hasDoctorate" class="form-label">¿Tiene Doctorado?</label>
-                        <select id="hasDoctorate" v-model="hasDoctorate" class="form-select" required>
+                        <select id="hasDoctorate" v-model="hasDoctorate" @change="validateHasDoctorate"
+                            class="form-select" required>
                             <option value="no">No</option>
                             <option value="si">Sí</option>
                         </select>
                     </div>
 
-                    <div v-if="hasDoctorate === 'si'" class="mb-3">
+                    <!-- Cambiar aquí la condición para incluir `hasMaster === 'si'` -->
+                    <div v-if="hasMaster === 'si' && hasDoctorate === 'si'" class="mb-3">
                         <label for="doctorateName" class="form-label">Nombre del Doctorado</label>
-                        <input type="text" id="doctorateName" v-model="doctorateName" class="form-control" />
+                        <input type="text" id="doctorateName" v-model="doctorateName" @input="validateDoctorateName"
+                            @focus="doctorateNameTouched = true" class="form-control" />
+                        <p v-if="doctorateNameError" class="text-danger">{{ doctorateNameError }}</p>
                     </div>
+
 
                     <div class="form-group row">
                         <label for="isGraduated" class="col-sm-4 col-form-label">¿Está titulado o es pasante?</label>
                         <div class="col-sm-8">
-                            <select id="isGraduated" v-model="isGraduated" class="form-control" required>
+                            <select id="isGraduated" v-model="isGraduated" @change="validateGraduation"
+                                class="form-control" required>
                                 <option value="Titulado">Titulado</option>
                                 <option value="Pasante">Pasante</option>
                             </select>
@@ -88,21 +126,25 @@
 
                     <div class="form-group">
                         <label for="employeeNumber">Número de Trabajador</label>
-                        <input type="text" id="employeeNumber" v-model="employeeNumber" class="form-control" required />
+                        <input type="text" id="employeeNumber" v-model="employeeNumber" @input="validateEmployeeNumber"
+                            class="form-control" required />
                         <p v-if="employeeNumberError" class="text-danger">{{ employeeNumberError }}</p>
                     </div>
 
                     <div class="form-group">
                         <label for="unionNumber">Número de Sindicalizado</label>
-                        <input type="text" id="unionNumber" v-model="unionNumber" class="form-control" required />
+                        <input type="text" id="unionNumber" v-model="unionNumber" @input="validateUnionNumber"
+                            class="form-control" required />
                         <p v-if="unionNumberError" class="text-danger">{{ unionNumberError }}</p>
                     </div>
 
-                    <div class="d-flex justify-content-between">
+                    <!-- Botones de navegación -->
+                    <div class="d-flex justify-content-between mt-4">
                         <button type="button" class="btn btn-secondary" @click="previousStep">Anterior</button>
                         <button type="button" class="btn btn-primary" @click="nextStep">Siguiente</button>
                     </div>
                 </div>
+
 
                 <div v-if="step === 3" class="animate__animated animate__fadeIn">
                     <h4 class="mb-3">Credenciales de Acceso</h4>
@@ -114,8 +156,13 @@
 
                     <div class="mb-3">
                         <label for="password" class="form-label">Contraseña</label>
-                        <input type="password" id="password" v-model="password" @input="evaluatePassword"
-                            class="form-control" required />
+                        <div class="input-group">
+                            <input :type="passwordFieldType" id="password" v-model="password" @input="evaluatePassword"
+                                class="form-control" required />
+                            <span class="input-group-text" @click="togglePasswordVisibility" style="cursor: pointer">
+                                <i :class="passwordFieldType === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash'"></i>
+                            </span>
+                        </div>
                         <div :style="{ width: passwordStrengthBarWidth }" class="password-strength-bar mt-2"></div>
                         <p v-if="passwordStrengthMessage" class="text-info">{{ passwordStrengthMessage }}</p>
                         <p v-if="passwordTooWeakMessage" class="text-danger">{{ passwordTooWeakMessage }}</p>
@@ -123,8 +170,15 @@
 
                     <div class="mb-3">
                         <label for="confirmPassword" class="form-label">Confirmar Contraseña</label>
-                        <input type="password" id="confirmPassword" v-model="confirmPassword"
-                            @input="checkPasswordsMatch" class="form-control" required />
+                        <div class="input-group">
+                            <input :type="confirmPasswordFieldType" id="confirmPassword" v-model="confirmPassword"
+                                @input="checkPasswordsMatch" class="form-control" required />
+                            <span class="input-group-text" @click="toggleConfirmPasswordVisibility"
+                                style="cursor: pointer">
+                                <i
+                                    :class="confirmPasswordFieldType === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash'"></i>
+                            </span>
+                        </div>
                         <p v-if="passwordMismatchMessage" class="text-danger">{{ passwordMismatchMessage }}</p>
                     </div>
 
@@ -162,6 +216,8 @@ export default {
             masterName: '',
             hasDoctorate: 'no',
             doctorateName: '',
+            masterNameError: '',
+            doctorateNameError: '',
             isGraduated: 'graduated',
             employeeNumber: '',
             unionNumber: '',
@@ -176,6 +232,16 @@ export default {
             isPasswordStrong: false,
             passwordsMatch: true,
             passwordMismatchMessage: '',
+            masterNameTouched: false, // Indicador para saber si el usuario interactuó con el campo
+            doctorateNameTouched: false, // Lo mismo para el doctorado
+            selectedPosition: '', // Nuevo campo para el ID del puesto seleccionado
+            puestos: [], // Lista de puestos obtenida desde el backend
+            errorPosition: '', // Error para el puesto
+            passwordFieldType: 'password',
+            confirmPasswordFieldType: 'password',
+            verificationCode: '', // Código de verificación introducido por el usuario
+            verificationError: '', // Error de validación del código
+            originalEmail: null, // Nuevo estado para almacenar el correo original
 
             firstNameError: '',
             lastNameError: '',
@@ -190,34 +256,192 @@ export default {
             csrfToken: '',
         };
     },
+    async mounted() {
+        await this.fetchPuestos(); // Cargar los puestos al montar el componente
+    },
 
-    
     methods: {
+
+        // Alternar visibilidad del campo Confirmar Contraseña
+        toggleConfirmPasswordVisibility() {
+            this.confirmPasswordFieldType =
+                this.confirmPasswordFieldType === 'password' ? 'text' : 'password';
+        },
+
+        togglePasswordVisibility() {
+            this.passwordFieldType = this.passwordFieldType === 'password' ? 'text' : 'password';
+        },
+        // Método para obtener los puestos del backend
+        async fetchPuestos() {
+            try {
+                const response = await axios.get('https://proyectosin.onrender.com/puestos');
+                this.puestos = response.data; // Lista de puestos cargada desde el backend
+            } catch (error) {
+                console.error('Error al obtener los puestos:', error);
+                this.errorMessage = 'No se pudieron cargar los puestos.';
+            }
+        },
+
+
 
         sanitizeInput(input) {
             return input.replace(/[<>/\\{}()"'`]/g, ''); // Elimina caracteres peligrosos
         },
 
 
-        // Manejo del cambio de paso
-        nextStep() {
-            if (this.step === 1) {
-                if (this.validateStep1()) {
-                    this.step++;
-                }
-            } else if (this.step === 2) {
-                if (this.validateStep2()) {
-                    this.step++;
-                }
-            } else if (this.step === 3) {
-                if (this.validateStep3()) {
-                    this.handleSubmit(); // Llama a la función de envío de datos si se validó el último paso
+
+        validateFirstName() {
+            this.firstNameError = '';
+            if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(this.firstName) || this.firstName.length < 2 || this.firstName.length > 50) {
+                this.firstNameError = 'Nombre inválido. Debe contener solo letras (puede incluir acentos y "ñ") y tener entre 2 y 50 caracteres.';
+            }
+        },
+
+        validateLastName() {
+            this.lastNameError = '';
+            if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(this.lastName) || this.lastName.length < 2 || this.lastName.length > 50) {
+                this.lastNameError = 'Apellido paterno inválido. Debe contener solo letras (puede incluir acentos y "ñ") y tener entre 2 y 50 caracteres.';
+            }
+        },
+
+        validateMotherLastName() {
+            this.motherLastNameError = '';
+            if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(this.motherLastName) || this.motherLastName.length < 2 || this.motherLastName.length > 50) {
+                this.motherLastNameError = 'Apellido materno inválido. Debe contener solo letras (puede incluir acentos y "ñ") y tener entre 2 y 50 caracteres.';
+            }
+        },
+        validatePhoneNumber() {
+            this.phoneNumberError = '';
+            if (!/^\d{10}$/.test(this.phoneNumber)) {
+                this.phoneNumberError = 'Teléfono inválido. Debe ser un número de 10 dígitos.';
+            }
+        },
+        validateEmail() {
+            this.emailError = '';
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email)) {
+                this.emailError = 'Correo electrónico inválido.';
+            }
+        },
+        // Validar que se haya seleccionado un puesto
+        validatePosition() {
+            // Si no se ha seleccionado un puesto, mostrar el error
+            if (!this.selectedPosition) {
+                this.errorPosition = 'Debe seleccionar un puesto.';
+                return false;
+            }
+
+            // Si se seleccionó un puesto, eliminar el error
+            this.errorPosition = '';
+            return true;
+        },
+        validateHasMaster() {
+            // Valida solo si el usuario seleccionó "Sí" en ¿Tiene Maestría?
+            if (this.hasMaster === 'si') {
+                this.validateMasterName(); // Llama a la validación específica del nombre de la maestría
+            } else {
+                this.masterNameError = ''; // Limpia los errores si no tiene maestría
+            }
+        },
+
+        validateMasterName() {
+            if (this.hasMaster === 'si' && this.masterNameTouched) {
+                // Validar que solo contenga letras y espacios, con una longitud entre 2 y 100 caracteres
+                if (!/^[a-zA-Z\s]+$/.test(this.masterName) || this.masterName.trim().length < 2 || this.masterName.trim().length > 100) {
+                    this.masterNameError = 'Nombre de la Maestría inválido. Debe contener solo letras y tener entre 2 y 100 caracteres.';
+                } else {
+                    this.masterNameError = ''; // Limpia el error si la validación pasa
                 }
             }
         },
+
+
+
+        validateHasDoctorate() {
+            // Valida solo si el usuario seleccionó "Sí" en ¿Tiene Doctorado?
+            if (this.hasDoctorate === 'si') {
+                this.validateDoctorateName(); // Llama a la validación específica del nombre del doctorado
+            } else {
+                this.doctorateNameError = ''; // Limpia los errores si no tiene doctorado
+            }
+        },
+
+        validateDoctorateName() {
+            if (this.hasDoctorate === 'si' && this.doctorateNameTouched) {
+                // Validar que solo contenga letras y espacios, con una longitud entre 2 y 100 caracteres
+                if (!/^[a-zA-Z\s]+$/.test(this.doctorateName) || this.doctorateName.trim().length < 2 || this.doctorateName.trim().length > 100) {
+                    this.doctorateNameError = 'Nombre del Doctorado inválido. Debe contener solo letras y tener entre 2 y 100 caracteres.';
+                } else {
+                    this.doctorateNameError = ''; // Limpia el error si la validación pasa
+                }
+            }
+        },
+        validateGraduation() {
+            if (!this.isGraduated || (this.isGraduated !== 'Titulado' && this.isGraduated !== 'Pasante')) {
+                this.graduationError = 'Debe seleccionar si está titulado o es pasante.';
+            } else {
+                this.graduationError = '';
+            }
+        },
+        validateEmployeeNumber() {
+            if (!/^\d+$/.test(this.employeeNumber) || this.employeeNumber.length < 1 || this.employeeNumber.length > 20) {
+                this.employeeNumberError = 'Número de Trabajador inválido. Debe contener solo números.';
+            } else {
+                this.employeeNumberError = '';
+            }
+        },
+        validateUnionNumber() {
+            if (!/^\d+$/.test(this.unionNumber) || this.unionNumber.length < 1 || this.unionNumber.length > 20) {
+                this.unionNumberError = 'Número de Sindicalizado inválido. Debe contener solo números.';
+            } else {
+                this.unionNumberError = '';
+            }
+        },
+        handleHasMasterChange() {
+            this.validateHasMaster(); // Llamar al método existente para validación
+            if (this.hasMaster === 'no') {
+                this.hasDoctorate = 'no'; // Restablecer la selección de doctorado
+                this.doctorateName = '';  // Limpiar el nombre del doctorado
+            }
+        },
+
+        // Manejo del cambio de paso
+
+        // Manejo del cambio de paso
+        nextStep() {
+            if (this.step === 1) {
+                // Verificar si el correo ha cambiado
+                if (this.validateStep1()) {
+                    if (this.email !== this.originalEmail) {
+                        // Si el correo ha cambiado, guarda los datos y avanza al paso 1.5
+                        this.verificationCode = ''; // Limpia el código de verificación
+                        this.saveTemporaryData(); // Guarda los datos en el backend
+                    } else {
+                        // Si no cambió el correo, avanza directamente al paso 2
+                        this.step = 2;
+                    }
+                }
+            } else if (this.step === 1.5) {
+                // Validar el código de verificación antes de avanzar al paso 2
+                if (this.validateVerificationCode()) {
+                    this.step = 2;
+                }
+            } else if (this.step === 2) {
+                // Avanzar al paso 3
+                this.step = 3;
+                this.successMessage = '';
+            }
+        },
+
         previousStep() {
-            if (this.step > 1) {
-                this.step--;
+            if (this.step === 1.5) {
+                // Regresar directamente al paso 1
+                this.step = 1;
+            } else if (this.step === 2) {
+                // Regresar al paso 1, saltando el paso 1.5
+                this.step = this.email === this.originalEmail ? 1 : 1.5;
+            } else if (this.step === 3) {
+                // Regresar al paso 2
+                this.step = 2;
             }
         },
 
@@ -239,18 +463,18 @@ export default {
             this.email = this.sanitizeInput(this.email);
 
             // Validaciones
-            if (!/^[a-zA-Z\s]+$/.test(this.firstName) || this.firstName.length < 2 || this.firstName.length > 50) {
-                this.firstNameError = 'Nombre inválido. Debe contener solo letras y tener entre 2 y 50 caracteres.';
+            if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(this.firstName) || this.firstName.length < 2 || this.firstName.length > 50) {
+                this.firstNameError = 'Nombre inválido. Debe contener solo letras (puede incluir acentos y "ñ") y tener entre 2 y 50 caracteres.';
                 return false;
             }
 
-            if (!/^[a-zA-Z\s]+$/.test(this.lastName) || this.lastName.length < 2 || this.lastName.length > 50) {
-                this.lastNameError = 'Apellido paterno inválido. Debe contener solo letras y tener entre 2 y 50 caracteres.';
+            if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(this.lastName) || this.lastName.length < 2 || this.lastName.length > 50) {
+                this.lastNameError = 'Apellido paterno inválido. Debe contener solo letras (puede incluir acentos y "ñ") y tener entre 2 y 50 caracteres.';
                 return false;
             }
 
-            if (!/^[a-zA-Z\s]*$/.test(this.motherLastName) || this.motherLastName.length > 50) {
-                this.motherLastNameError = 'Apellido materno inválido. Debe contener solo letras y tener hasta 50 caracteres.';
+            if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(this.motherLastName) || this.motherLastName.length > 50) {
+                this.motherLastNameError = 'Apellido materno inválido. Debe contener solo letras (puede incluir acentos y "ñ") y tener hasta 50 caracteres.';
                 return false;
             }
 
@@ -272,19 +496,36 @@ export default {
             this.position = this.sanitizeInput(this.position);
             this.employeeNumber = this.sanitizeInput(this.employeeNumber);
             this.unionNumber = this.sanitizeInput(this.unionNumber);
+            // Validar que se haya seleccionado un puesto válido
+            // Llamar a validatePosition dentro del flujo de validación del paso 2
+            if (!this.validatePosition()) {
+                return false; // Detiene el avance si no se ha seleccionado un puesto
+            }
 
-            if (!/^[a-zA-Z\s]+$/.test(this.position) || this.position.length < 2 || this.position.length > 100) {
-                alert('Puesto inválido. Debe contener solo letras y tener entre 2 y 100 caracteres.');
-                return false;
+
+            // Validar si tiene maestría, entonces nombreMaestria es obligatorio
+            if (this.hasMaster === 'si') {
+                if (!this.masterName || this.masterName.trim().length < 2 || this.masterName.trim().length > 100) {
+                    this.masterNameError = 'Nombre de la maestría inválido. Debe contener entre 2 y 100 caracteres.';
+                    return false;
+                }
+            }
+
+            // Validar si tiene doctorado, entonces doctorateName es obligatorio
+            if (this.hasDoctorate === 'si') {
+                if (!this.doctorateName || this.doctorateName.trim().length < 2 || this.doctorateName.trim().length > 100) {
+                    this.doctorateNameError = 'Nombre del doctorado inválido. Debe contener entre 2 y 100 caracteres.';
+                    return false;
+                }
             }
 
             if (this.isGraduated !== 'Titulado' && this.isGraduated !== 'Pasante') {
-                alert('Debe seleccionar si está titulado o es pasante.');
+                this.graduationError = 'Debe seleccionar si está titulado o es pasante.';
                 return false;
             }
 
             if (!/^\d+$/.test(this.employeeNumber) || this.employeeNumber.length < 1 || this.employeeNumber.length > 20) {
-                alert('Número de trabajador inválido. Debe ser un número.');
+                this.employeeNumberError = 'Número de trabajador inválido. Debe ser un número.';
                 return false;
             }
 
@@ -305,6 +546,7 @@ export default {
                 return false;
             }
 
+
             // Verificación de contraseña (ya tienes esta lógica en evaluatePassword)
             this.evaluatePassword();
             if (!this.isPasswordStrong) {
@@ -322,24 +564,94 @@ export default {
             return true;
         },
 
+        async saveTemporaryData() {
+            try {
+                const response = await axios.post('https://proyectosin.onrender.com/guardar-temporal', {
+                    nombre: this.firstName,
+                    apellidoPaterno: this.lastName,
+                    apellidoMaterno: this.motherLastName,
+                    telefono: this.phoneNumber,
+                    correo: this.email,
+                });
+
+                if (response.status === 200) {
+                    this.successMessage = 'Código enviado a tu correo.';
+                    this.errorMessage = '';
+                    this.originalEmail = this.email; // Almacena el correo enviado exitosamente
+                    this.step = 1.5; // Avanza al paso de verificación de código
+                }
+            } catch (error) {
+                this.errorMessage = error.response?.data || 'Error al guardar datos.';
+            }
+        },
+        async validateVerificationCode() {
+            try {
+                const response = await axios.post('https://proyectosin.onrender.com/validar-codigo', {
+                    correo: this.email,
+                    codigo: this.verificationCode,
+                });
+
+                if (response.status === 200) {
+                    this.successMessage = 'Correo verificado correctamente.';
+                    this.errorMessage = '';
+                    this.step = 2; // Avanza al siguiente paso
+                }
+            } catch (error) {
+                this.verificationError = error.response?.data || 'Código de verificación incorrecto o expirado.';
+            }
+        },
+
+        containsSequentialPattern(password) {
+            const length = password.length;
+
+            for (let i = 0; i < length - 2; i++) {
+                const currentChar = password.charCodeAt(i);
+                const nextChar = password.charCodeAt(i + 1);
+                const nextNextChar = password.charCodeAt(i + 2);
+
+                // Patrón de incremento (ej. "123", "abc")
+                if (
+                    nextChar === currentChar + 1 &&
+                    nextNextChar === currentChar + 2
+                ) {
+                    return true;
+                }
+
+                // Patrón de decremento (ej. "321", "cba")
+                if (
+                    nextChar === currentChar - 1 &&
+                    nextNextChar === currentChar - 2
+                ) {
+                    return true;
+                }
+            }
+
+            return false;
+        },
+
 
         evaluatePassword() {
             const password = this.password;
-            const passwordStrength = zxcvbn(password);
 
-            // Actualizar la barra de progreso de fortaleza
+            // Verifica si contiene patrones de sucesión
+            if (this.containsSequentialPattern(password)) {
+                this.passwordTooWeakMessage = 'La contraseña contiene patrones de sucesión numérica o alfabética.';
+                this.isPasswordStrong = false;
+                return;
+            }
+
+            // Valida la fortaleza usando zxcvbn
+            const passwordStrength = zxcvbn(password);
             this.passwordStrengthBarWidth = (passwordStrength.score / 4) * 100 + '%';
             this.passwordStrengthMessage = this.getPasswordStrengthMessage(passwordStrength.score);
 
-            // Advertencia visual, pero no bloqueo del registro
             if (passwordStrength.score < 2) {
                 this.passwordTooWeakMessage = 'Advertencia: La contraseña es débil.';
+                this.isPasswordStrong = false;
             } else {
                 this.passwordTooWeakMessage = '';
+                this.isPasswordStrong = true;
             }
-
-            // Ya no se bloquea el registro, solo se muestra la advertencia
-            this.isPasswordStrong = true; // Siempre permite registrar
         },
 
         async validatePassword() {
@@ -431,31 +743,23 @@ export default {
             }
 
             try {
-                console.log({
-                    nombre: this.firstName,
-                    apellidoPaterno: this.lastName,
-                    apellidoMaterno: this.motherLastName,
-                    telefono: this.phoneNumber,
-                    correo: this.email,
-                    puesto: this.position,
-                    tieneMaestria: this.hasMaster,
-                    nombreMaestria: this.masterName,
-                    tieneDoctorado: this.hasDoctorate,
-                    nombreDoctorado: this.doctorateName,
-                    estatus: this.isGraduated,
-                    numeroTrabajador: this.employeeNumber,
-                    numeroSindicalizado: this.unionNumber,
-                    usuarios: this.username,
-                    password: this.password,
+                // Buscar el nombre del puesto a partir del ID seleccionado
+                const puestoSeleccionado = this.puestos.find(
+                    (puesto) => puesto.id === this.selectedPosition
+                );
 
-                });
+                if (!puestoSeleccionado) {
+                    this.errorMessage = 'Debe seleccionar un puesto válido.';
+                    return;
+                }
+
                 const response = await axios.post('https://proyectosin.onrender.com/register', {
                     nombre: this.firstName,
                     apellidoPaterno: this.lastName,
                     apellidoMaterno: this.motherLastName,
                     telefono: this.phoneNumber,
                     correo: this.email,
-                    puesto: this.position,
+                    puesto: puestoSeleccionado.nombre,
                     tieneMaestria: this.hasMaster,
                     nombreMaestria: this.masterName,
                     tieneDoctorado: this.hasDoctorate,
@@ -467,19 +771,19 @@ export default {
                     password: this.password,
 
                 },
-                    
+
                 );
                 console.log(response.data);
 
                 if (response.status === 200) {
-                    this.successMessage = 'Registro exitoso. Se ha enviado un correo de verificación.';
+                    this.successMessage = 'Registro exitoso.';
                     this.errorMessage = '';
                     this.resetForm(); // Opcional: Resetear el formulario
 
                     // Redirigir al usuario a la página de inicio de sesión después de unos segundos
                     setTimeout(() => {
                         this.$router.push('/login');
-                    }, 3000); // 3 segundos de retraso antes de redirigir
+                    }, 3000); // 2 segundos de retraso antes de redirigir
                 }
             } catch (error) {
                 if (error.response?.data.includes('comprometida')) {
@@ -618,5 +922,33 @@ export default {
 
 .text-info {
     font-size: 0.9rem;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.5s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+
+@media (max-width: 768px) {
+    .registration-container {
+        max-width: 90%;
+        padding: 15px;
+    }
+
+    .btn-primary,
+    .btn-secondary,
+    .btn-success {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .step-title {
+        font-size: 1.2rem;
+    }
 }
 </style>

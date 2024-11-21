@@ -5,7 +5,7 @@
           <h1 class="text-center mb-4">Recuperar Contraseña</h1>
           <form @submit.prevent="sendResetLink" class="shadow p-4 rounded bg-light">
             <div class="form-group mb-3">
-              <label for="email" class="form-label">Correo Electrónico</label>
+              <label for="email" class="form-label">Por favor, introduce tu correo electrónico registrado en la plataforma.</label>
               <input type="email" id="email" v-model="email" class="form-control" required />
             </div>
             <button type="submit" class="btn btn-primary w-100">Enviar Enlace de Recuperación</button>

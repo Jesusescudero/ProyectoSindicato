@@ -61,43 +61,93 @@ export default {
     return {
       isEditing: false,
       message: '',
-      documents: [], // Inicialmente vacío, se cargará desde el backend
+      documents: [],
       document: {
         file: null, // Para almacenar el archivo subido
         validUntil: "",
         version: "",
         id: null,
-      }
+      },
+      errors: {
+        file: null, // Para manejar errores relacionados con el archivo
+        validUntil: null,
+      },
     };
   },
   methods: {
     handleFileUpload(event) {
-      this.document.file = event.target.files[0]; // Almacena el archivo subido en la variable `file`
+      const file = event.target.files[0];
+      this.document.file = file;
+
+      // Validar tipo de archivo
+      const allowedTypes = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+      if (!file || !allowedTypes.includes(file.type)) {
+        this.errors.file = "Solo se permiten archivos PDF o Word.";
+        this.document.file = null; // Elimina el archivo si no cumple
+        return;
+      }
+
+      // Validar tamaño del archivo (5 MB máximo)
+      const maxSize = 5 * 1024 * 1024; // 5 MB
+      if (file.size > maxSize) {
+        this.errors.file = "El archivo no debe exceder los 5 MB.";
+        this.document.file = null; // Elimina el archivo si no cumple
+        return;
+      }
+
+      // Si todo está bien, limpiar errores
+      this.errors.file = null;
+    },
+
+    validateForm() {
+      let isValid = true;
+
+      // Validar que se haya subido un archivo válido
+      if (!this.document.file) {
+        this.errors.file = "Debes subir un archivo.";
+        isValid = false;
+      } else {
+        this.errors.file = null;
+      }
+
+      // Validar que la fecha de vigencia sea válida
+      const today = new Date().toISOString().split("T")[0];
+      if (!this.document.validUntil || this.document.validUntil < today) {
+        this.errors.validUntil = "La fecha de vigencia debe ser posterior a la fecha actual.";
+        isValid = false;
+      } else {
+        this.errors.validUntil = null;
+      }
+
+      return isValid;
     },
 
     handleSubmit() {
+      // Validar el formulario antes de continuar
+      if (!this.validateForm()) {
+        return;
+      }
+
       if (this.isEditing) {
         this.updateDocument();
       } else {
         this.createDocument();
       }
     },
-    
+
     async createDocument() {
       const formData = new FormData();
-      formData.append("file", this.document.file);  // El archivo
+      formData.append("file", this.document.file); // El archivo
       formData.append("validUntil", this.document.validUntil);
 
       try {
-        // Enviar la solicitud al backend para guardar el documento en la base de datos
-        const response = await fetch('https://proyectosin.onrender.com/upload-aviso-privacidad', {
-          method: 'POST',
-          body: formData
+        const response = await fetch("https://proyectosin.onrender.com/upload-aviso-privacidad", {
+          method: "POST",
+          body: formData,
         });
         const result = await response.json();
         if (response.ok) {
           this.message = "Documento creado exitosamente.";
-          // Recargar los documentos después de guardar
           this.fetchDocuments();
           this.resetForm();
         } else {
@@ -108,18 +158,18 @@ export default {
         console.error(error);
       }
     },
-    
+
     async fetchDocuments() {
       try {
-        const response = await fetch('https://proyectosin.onrender.com/documents-aviso-privacidad');  // Verifica que esta URL sea correcta
+        const response = await fetch("https://proyectosin.onrender.com/documents-aviso-privacidad");
         const data = await response.json();
         if (response.ok) {
-          this.documents = data;  // Asigna los documentos al arreglo
+          this.documents = data;
         } else {
-          console.error('Error al obtener documentos:', data.message);
+          console.error("Error al obtener documentos:", data.message);
         }
       } catch (error) {
-        console.error('Error al obtener documentos:', error);
+        console.error("Error al obtener documentos:", error);
       }
     },
 
@@ -127,10 +177,10 @@ export default {
       this.isEditing = true;
       this.document = { ...doc };
     },
-    
-    updateDocument() {
+
+    async updateDocument() {
       // Código para actualizar el documento (similar a createDocument)
-      const index = this.documents.findIndex(d => d.id === this.document.id);
+      const index = this.documents.findIndex((d) => d.id === this.document.id);
       if (index !== -1) {
         this.document.version = (parseFloat(this.document.version) + 0.1).toFixed(1);
         this.documents.splice(index, 1, { ...this.document });
@@ -138,11 +188,11 @@ export default {
         this.resetForm();
       }
     },
-    
+
     async deleteDocument(docId) {
       try {
         const response = await fetch(`https://proyectosin.onrender.com/delete-aviso-privacidad/${docId}`, {
-          method: 'POST', // Cambiado a POST en lugar de PATCH
+          method: "POST",
         });
         const data = await response.json();
         if (response.ok) {
@@ -160,14 +210,15 @@ export default {
     resetForm() {
       this.isEditing = false;
       this.document = { file: null, validUntil: "", version: "", id: null };
-    }
+      this.errors = { file: null, validUntil: null };
+    },
   },
   created() {
-    // Cargar los documentos cuando se cargue el componente
     this.fetchDocuments();
-  }
+  },
 };
 </script>
+
 
 
 <style scoped>
