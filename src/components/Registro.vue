@@ -57,25 +57,29 @@
                     </div>
 
 
-                    <button type="button" class="btn btn-secondary w-100 mt-3" @click="previousStep">Regresar</button>
-                    <button type="button" class="btn btn-primary w-100" @click="validateVerificationCode">Validar
+
+                    <button type="button" class="btn btn-primary w-100 mt3" @click="validateVerificationCode">Validar
                         Código</button>
+                    <button type="button" class="btn btn-secondary w-100 mt-3" @click="previousStep">Regresar</button>
                 </div>
 
 
 
                 <div v-if="step === 2" class="animate__animated animate__fadeIn">
                     <h4 class="mb-3">Información Académica</h4>
+                    <div class="mb-3">
+                        <label for="position" class="form-label">Seleccione un puesto</label>
+                        <!-- Dropdown dinámico para seleccionar el puesto -->
+                        <select id="position" v-model="selectedPosition" class="form-select" @change="validatePosition"
+                            required>
+                            <option disabled value="">Seleccione un puesto</option>
+                            <option v-for="puesto in puestos" :key="puesto.id" :value="puesto.id">
+                                {{ puesto.nombre }}
+                            </option>
+                        </select>
+                        <p v-if="errorPosition" class="text-danger">{{ errorPosition }}</p>
+                    </div>
 
-                    <!-- Dropdown dinámico para seleccionar el puesto -->
-                    <select id="position" v-model="selectedPosition" class="form-select" @change="validatePosition"
-                        required>
-                        <option disabled value="">Seleccione un puesto</option>
-                        <option v-for="puesto in puestos" :key="puesto.id" :value="puesto.id">
-                            {{ puesto.nombre }}
-                        </option>
-                    </select>
-                    <p v-if="errorPosition" class="text-danger">{{ errorPosition }}</p>
 
 
                     <div class="mb-3">
@@ -139,7 +143,7 @@
                     </div>
 
                     <!-- Botones de navegación -->
-                    <div class="d-flex justify-content-between mt-4">
+                    <div class="button-group mt-4">
                         <button type="button" class="btn btn-secondary" @click="previousStep">Anterior</button>
                         <button type="button" class="btn btn-primary" @click="nextStep">Siguiente</button>
                     </div>
@@ -182,8 +186,9 @@
                         <p v-if="passwordMismatchMessage" class="text-danger">{{ passwordMismatchMessage }}</p>
                     </div>
 
-                    <div class="d-flex justify-content-between">
+                    <div class="d-flex justify-content-between custom-gap">
                         <button type="button" class="btn btn-secondary" @click="previousStep">Anterior</button>
+                        
                         <button type="submit" class="btn btn-success">Registrar</button>
                     </div>
                 </div>
@@ -292,22 +297,22 @@ export default {
 
         validateFirstName() {
             this.firstNameError = '';
-            if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(this.firstName) || this.firstName.length < 2 || this.firstName.length > 50) {
-                this.firstNameError = 'Nombre inválido. Debe contener solo letras (puede incluir acentos y "ñ") y tener entre 2 y 50 caracteres.';
+            if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(this.firstName) || this.firstName.length < 3 || this.firstName.length > 50) {
+                this.firstNameError = 'Nombre inválido. Debe contener solo letras y tener entre 3 y 50 caracteres.';
             }
         },
 
         validateLastName() {
             this.lastNameError = '';
-            if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(this.lastName) || this.lastName.length < 2 || this.lastName.length > 50) {
-                this.lastNameError = 'Apellido paterno inválido. Debe contener solo letras (puede incluir acentos y "ñ") y tener entre 2 y 50 caracteres.';
+            if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(this.lastName) || this.lastName.length < 3 || this.lastName.length > 50) {
+                this.lastNameError = 'Apellido paterno inválido. Debe contener solo letras y tener entre 3 y 50 caracteres.';
             }
         },
 
         validateMotherLastName() {
             this.motherLastNameError = '';
-            if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(this.motherLastName) || this.motherLastName.length < 2 || this.motherLastName.length > 50) {
-                this.motherLastNameError = 'Apellido materno inválido. Debe contener solo letras (puede incluir acentos y "ñ") y tener entre 2 y 50 caracteres.';
+            if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(this.motherLastName) || this.motherLastName.length < 3 || this.motherLastName.length > 50) {
+                this.motherLastNameError = 'Apellido materno inválido. Debe contener solo letras y tener entre 3 y 50 caracteres.';
             }
         },
         validatePhoneNumber() {
@@ -426,9 +431,13 @@ export default {
                     this.step = 2;
                 }
             } else if (this.step === 2) {
-                // Avanzar al paso 3
+                // Validar campos del paso 2 (Información Académica)
+                if (!this.validateStep2()) {
+                    this.errorMessage = "Por favor, completa todos los campos obligatorios.";
+                    return; // Detener avance si las validaciones fallan
+                }
+                this.errorMessage = ""; // Limpiar mensajes de error
                 this.step = 3;
-                this.successMessage = '';
             }
         },
 
@@ -463,18 +472,18 @@ export default {
             this.email = this.sanitizeInput(this.email);
 
             // Validaciones
-            if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(this.firstName) || this.firstName.length < 2 || this.firstName.length > 50) {
-                this.firstNameError = 'Nombre inválido. Debe contener solo letras (puede incluir acentos y "ñ") y tener entre 2 y 50 caracteres.';
+            if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(this.firstName) || this.firstName.length < 3 || this.firstName.length > 50) {
+                this.firstNameError = 'Nombre inválido. Debe contener solo letras y tener entre 2 y 50 caracteres.';
                 return false;
             }
 
-            if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(this.lastName) || this.lastName.length < 2 || this.lastName.length > 50) {
-                this.lastNameError = 'Apellido paterno inválido. Debe contener solo letras (puede incluir acentos y "ñ") y tener entre 2 y 50 caracteres.';
+            if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(this.lastName) || this.lastName.length < 3 || this.lastName.length > 50) {
+                this.lastNameError = 'Apellido paterno inválido. Debe contener solo letras y tener entre 3 y 50 caracteres.';
                 return false;
             }
 
-            if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(this.motherLastName) || this.motherLastName.length > 50) {
-                this.motherLastNameError = 'Apellido materno inválido. Debe contener solo letras (puede incluir acentos y "ñ") y tener hasta 50 caracteres.';
+            if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(this.motherLastName) || this.firstName.length < 3 || this.motherLastName.length > 50) {
+                this.motherLastNameError = 'Apellido materno inválido. Debe contener solo letras y tener entre 3 y 50 caracteres.';
                 return false;
             }
 
@@ -594,7 +603,13 @@ export default {
                 if (response.status === 200) {
                     this.successMessage = 'Correo verificado correctamente.';
                     this.errorMessage = '';
-                    this.step = 2; // Avanza al siguiente paso
+
+                    // Ocultar mensaje después de 5 segundos
+                    setTimeout(() => {
+                        this.successMessage = '';
+                    }, 3500);
+
+                    this.step = 2; // Avanzar al paso 2
                 }
             } catch (error) {
                 this.verificationError = error.response?.data || 'Código de verificación incorrecto o expirado.';
@@ -841,114 +856,216 @@ export default {
 </script>
 
 <style scoped>
-.registration-container {
-    max-width: 500px;
-    margin: 0 auto;
-    background-color: #f8f9fa;
-    padding: 20px;
+/* Contenedor principal */
+.container {
+    max-width: 450px;
+    margin: auto;
+    /* Centrar en la página */
+    background-color: #e4e9ee;
+    /* Fondo suave */
+    padding: 30px;
     border-radius: 10px;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    /* Sombra */
 }
 
-.step-title {
-    text-align: center;
-    font-size: 1.5rem;
-    margin-bottom: 1.5rem;
+/* Título principal */
+h2 {
+    font-size: 1.8rem;
+    font-weight: bold;
     color: #333;
+    /* Texto oscuro */
+    text-align: center;
+    margin-bottom: 20px;
 }
 
-.card {
-    animation: fadeIn 1s;
+/* Subtítulo */
+h4 {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #666;
+    /* Texto más claro */
+    text-align: center;
+    margin-bottom: 20px;
 }
 
+/* Campos de entrada */
+.form-control {
+    width: 100%;
+    /* Ancho del 100% del contenedor */
+    max-width: 250px;
+    /* Tamaño máximo */
+    padding: 10px;
+    /* Ajusta el espacio interno (alto del campo) */
+    font-size: 1rem;
+    /* Ajusta el tamaño del texto */
+    border-radius: 8px;
+    /* Bordes redondeados */
+    border: 1px solid #ced4da;
+    margin: 0 auto;
+    /* Centrar dentro del contenedor */
+    transition: border-color 0.3s ease-in-out;
+    margin-bottom: 20px;
+    /* Espacio inferior entre campos y botones */
+}
+
+/* Campos en hover o focus */
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+    /* Efecto de foco */
+    outline: none;
+}
+
+
+/* Etiquetas */
+label {
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 8px;
+    display: block;
+    /* Mantiene el texto arriba del campo */
+    font-size: 1rem;
+    line-height: 1.5;
+    /* Espaciado adecuado entre etiquetas */
+}
+
+select {
+    font-size: 1rem; /* Ensure consistent font size */
+    padding: 0.375rem 0.75rem; /* Match Bootstrap padding */
+    border-radius: 0.25rem; /* Ensure consistent border radius */
+}
+
+/* Botones */
+/* Botones: Ajustados al ancho de los campos de entrada */
 .btn {
-    padding: 10px 20px;
-    font-size: 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    /* Texto compacto */
+    padding: 8px 16px;
+    /* Alto reducido */
+    width: 40%;
+    /* Hacer que ocupen el mismo ancho que los inputs */
+    max-width: 250px;
+    /* Tamaño máximo para mantener la proporción */
+    margin: 0 auto;
+    /* Centrar en el contenedor */
+    transition: all 0.3s ease-in-out;
+    margin-top: 10px;
+    /* Espacio superior opcional si es necesario */
 }
 
-.btn-secondary {
-    background-color: #6c757d;
-    border-color: #6c757d;
-}
-
-.btn-success {
-    background-color: #28a745;
-    border-color: #28a745;
-}
-
+/* Botón "Siguiente" (azul) */
 .btn-primary {
     background-color: #007bff;
-    border-color: #007bff;
+    border: none;
+    color: white;
+    width: auto;
+    /* Ajusta al contenido */
+    min-width: 120px;
+    /* Evita que el botón sea muy pequeño */
 }
 
-.btn-primary,
-.btn-secondary,
+.btn-primary:hover {
+    background-color: #0056b3;
+    /* Azul más oscuro al pasar el mouse */
+    color: white;
+}
+
+/* Botón "Regresar" (gris) */
+.btn-secondary {
+    background-color: #6c757d;
+    border: none;
+    color: white;
+    width: auto;
+    /* Ajusta al contenido */
+    min-width: 120px;
+}
+
+.btn-secondary:hover {
+    background-color: #495057;
+    /* Gris más oscuro al pasar el mouse */
+    color: white;
+}
+
+/* Botón "Registrar" (verde) */
 .btn-success {
-    width: 48%;
-    /* Hace que los botones ocupen la mitad del espacio cada uno */
+    background-color: #28a745;
+    border: none;
+    color: white;
+    width: auto;
+    /* Ajusta al contenido */
+    min-width: 150px;
+}
+
+.custom-gap {
+    gap: 50px; /* Cambia el valor según el espacio deseado */
+}
+
+
+.btn-success:hover {
+    background-color: #218838;
+    /* Verde más oscuro al pasar el mouse */
+    color: white;
+}
+
+.button-group {
+    display: flex;
+    justify-content: center;
+    gap: 1rem; /* Adjusts the space between buttons */
+}
+
+.button-group .btn {
+    padding: 0.5rem 1.5rem; /* Adjusts button size */
+}
+
+
+/* Mensajes de error */
+.text-danger {
+    color: red;
+    font-size: 0.9rem;
+    margin-top: 5px;
+}
+
+/* Mensajes de éxito */
+.text-success {
+    color: green;
+    font-size: 1rem;
+    margin-top: 5px;
     text-align: center;
 }
 
-.password-strength-bar {
-    height: 5px;
-    background-color: green;
+/* Espaciado entre secciones */
+.mt-3 {
+    margin-top: 1rem !important;
 }
 
-.animate__fadeIn {
-    animation: fadeIn 0.5s ease-in-out;
+.mt-4 {
+    margin-top: 1.5rem !important;
 }
 
-@keyframes fadeIn {
-    0% {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.w-100 {
+    width: 100% !important;
 }
 
-.error-message {
-    color: red;
-    font-size: 0.9rem;
-}
-
-.success-message {
-    color: green;
-    font-size: 1rem;
-}
-
-.text-info {
-    font-size: 0.9rem;
-}
-
-.fade-enter-active,
-.fade-leave-active {
-    transition: opacity 0.5s;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-    opacity: 0;
-}
-
+/* Ajustes responsivos */
 @media (max-width: 768px) {
-    .registration-container {
+    .container {
         max-width: 90%;
-        padding: 15px;
+        /* Ancho dinámico en pantallas pequeñas */
+        padding: 20px;
     }
 
-    .btn-primary,
-    .btn-secondary,
-    .btn-success {
-        width: 100%;
-        margin-bottom: 10px;
+    h2 {
+        font-size: 1.5rem;
     }
 
-    .step-title {
-        font-size: 1.2rem;
+    h4 {
+        font-size: 1rem;
+    }
+
+    .btn {
+        font-size: 0.9rem;
     }
 }
 </style>

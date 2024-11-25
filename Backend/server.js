@@ -840,16 +840,16 @@ app.post('/register', async (req, res) => {
 
   // Validaciones específicas
   // 1. Validar nombre (debe ser alfabético y tener una longitud razonable)
-  if (!/^[a-zA-Z\s]+$/.test(nombre) || nombre.length < 2 || nombre.length > 50) {
+  if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(nombre) || nombre.length < 3 || nombre.length > 50) {
     return res.status(400).send('Nombre inválido. Debe contener solo letras y tener entre 2 y 50 caracteres.');
   }
 
   // 2. Validar apellidos (similares al nombre)
-  if (!/^[a-zA-Z\s]+$/.test(apellidoPaterno) || apellidoPaterno.length < 2 || apellidoPaterno.length > 50) {
+  if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(apellidoPaterno) || apellidoPaterno.length < 3 || apellidoPaterno.length > 50) {
     return res.status(400).send('Apellido paterno inválido. Debe contener solo letras y tener entre 2 y 50 caracteres.');
   }
 
-  if (!/^[a-zA-Z\s]*$/.test(apellidoMaterno) || apellidoMaterno.length > 50) {
+  if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(apellidoMaterno) || apellidoMaterno.length < 3 || apellidoMaterno.length > 50) {
     return res.status(400).send('Apellido materno inválido. Debe contener solo letras y tener hasta 50 caracteres.');
   }
 
@@ -941,25 +941,29 @@ app.get('/user-dashboard', verifyUser, (req, res) => {
   res.send('Bienvenido al panel de usuario');
 });
 
-// Ruta de inicio de sesión
 app.post('/login', (req, res) => {
   const { usuarios, password, recaptchaToken } = req.body;
 
-  // Verificar el token reCAPTCHA con Google
-  const secretKey = '6LdkUWIqAAAAALb-T3v7NgI8esXjmpdwns3jG729'; // Reemplazar con tu clave secreta de reCAPTCHA
+  const secretKey = '6LdkUWIqAAAAALb-T3v7NgI8esXjmpdwns3jG729'; // Clave secreta de reCAPTCHA
   const verificationUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaToken}`;
 
+  // Verificar reCAPTCHA
   axios.post(verificationUrl)
-    .then(response => {
-      if (!response.data.success) {
+    .then(recaptchaResponse => {
+      if (!recaptchaResponse.data.success) {
         return res.status(400).send('reCAPTCHA fallido. Inténtalo nuevamente.');
       }
 
-      // Si reCAPTCHA es válido, continuar con el proceso de inicio de sesión
-      const sql = 'SELECT * FROM users WHERE usuarios = ?';
+      // Consultar la base de datos para obtener el usuario
+      const sql = 'SELECT id, usuarios, password, role, correo, bloqueadoHasta, intentosFallidos FROM users WHERE usuarios = ?';
       pool.query(sql, [usuarios], (err, results) => {
-        if (err || results.length === 0) {
-          return res.status(400).send('Usuario no encontrado');
+        if (err) {
+          console.error('Error en la consulta de la base de datos:', err);
+          return res.status(500).send('Error interno del servidor.');
+        }
+
+        if (results.length === 0) {
+          return res.status(400).send('Usuario no encontrado.');
         }
 
         const user = results[0];
@@ -971,80 +975,62 @@ app.post('/login', (req, res) => {
 
         // Comparar contraseñas
         bcrypt.compare(password, user.password, (err, isMatch) => {
+          if (err) {
+            console.error('Error al comparar contraseñas:', err);
+            return res.status(500).send('Error interno del servidor.');
+          }
+
           if (!isMatch) {
-            // Incrementar el contador de intentos fallidos
+            // Incrementar intentos fallidos
             const intentosFallidos = user.intentosFallidos ? user.intentosFallidos + 1 : 1;
+            const bloqueadoHasta = intentosFallidos >= 5 ? new Date(Date.now() + 30 * 60 * 1000) : null;
 
-            // Bloquear la cuenta si se superan los intentos permitidos
-            let bloqueadoHasta = null;
-            if (intentosFallidos >= 5) {
-              bloqueadoHasta = new Date(Date.now() + 30 * 60 * 1000); // Bloquear por 30 minutos
-            }
-
-            // Actualizar los intentos fallidos y el estado de bloqueo
             const sqlUpdate = 'UPDATE users SET intentosFallidos = ?, bloqueadoHasta = ? WHERE usuarios = ?';
             pool.query(sqlUpdate, [intentosFallidos, bloqueadoHasta, usuarios], (err) => {
               if (err) {
-                return res.status(500).send('Error al actualizar los intentos fallidos.');
+                console.error('Error al actualizar intentos fallidos:', err);
+                return res.status(500).send('Error interno del servidor.');
               }
-              return res.status(400).send('Contraseña incorrecta');
+              return res.status(400).send('Contraseña incorrecta.');
             });
           } else {
-            // Reiniciar intentos fallidos y bloqueos si la contraseña es correcta
+            // Reiniciar intentos fallidos
             const sqlReset = 'UPDATE users SET intentosFallidos = 0, bloqueadoHasta = NULL WHERE usuarios = ?';
             pool.query(sqlReset, [usuarios], (err) => {
               if (err) {
-                return res.status(500).send('Error al reiniciar los intentos fallidos.');
+                console.error('Error al reiniciar intentos fallidos:', err);
+                return res.status(500).send('Error interno del servidor.');
               }
 
-              // Regenerar la sesión después de un inicio de sesión exitoso
-              req.session.regenerate(function (err) {
+              // Generar código de verificación
+              const codigoVerificacion = Math.floor(100000 + Math.random() * 900000);
+              const expiracion = new Date(Date.now() + 5 * 60 * 1000); // Código válido por 5 minutos
+
+              const sqlUpdateCode = 'UPDATE users SET codigo_verificacion = ?, codigo_expiracion = ? WHERE usuarios = ?';
+              pool.query(sqlUpdateCode, [codigoVerificacion, expiracion, usuarios], (err) => {
                 if (err) {
-                  return res.status(500).send('Error al regenerar la sesión.');
+                  console.error('Error al actualizar el código de verificación:', err);
+                  return res.status(500).send('Error interno del servidor.');
                 }
-                console.log('ID de sesión generado:', req.sessionID);
 
-                // Almacenar información relevante en la sesión
-                req.session.userId = user.id; // Almacena el ID del usuario
-                req.session.username = user.usuarios; // Almacena el nombre de usuario
+                // Enviar el código al correo del usuario
+                enviarCodigoVerificacion(user.correo, codigoVerificacion)
+                  .then(result => {
+                    if (!result.success) {
+                      console.error('Error al enviar el código de verificación:', result.message);
+                      return res.status(500).send('Error al enviar el código de verificación.');
+                    }
 
-                // Generar el código de verificación
-                const codigoVerificacion = Math.floor(100000 + Math.random() * 900000);
-                const expiracion = new Date(Date.now() + 5 * 60 * 1000);
-
-                // Actualiza la base de datos con el código y la expiración
-                const sqlUpdate = 'UPDATE users SET codigo_verificacion = ?, codigo_expiracion = ? WHERE usuarios = ?';
-                pool.query(sqlUpdate, [codigoVerificacion, expiracion, usuarios], async (err) => {
-                  if (err) {
-                    return res.status(500).send('Error al actualizar el código de verificación.');
-                  }
-
-                  // Llama a la función enviarCodigoVerificacion
-                  const result = await enviarCodigoVerificacion(user.correo, codigoVerificacion);
-
-                  if (!result.success) {
-                    return res.status(500).send(result.message);
-                  }
-                  // Almacenar información relevante en la sesión
-                  req.session.userId = user.id;
-                  req.session.username = user.usuarios;
-
-                  // Establecer el tiempo de expiración de la sesión
-                  req.session.cookie.expires = new Date(Date.now() + 30 * 60 * 1000);  // 30 minutos
-                  req.session.cookie.maxAge = 30 * 60 * 1000;  // Sesiones basadas en actividad
-
-                  // Generar el token incluyendo el rol
-                  const token = jwt.sign({ id: user.id, usuarios: user.usuarios, role: user.role }, process.env.JWT_SECRET || 'mi_secreto', {
-                    expiresIn: '1h',
+                    // Responder al cliente (NO generar sesión aquí)
+                    return res.status(200).json({
+                      success: true,
+                      message: 'Código de verificación enviado. Revisa tu correo.',
+                    });
+                  })
+                  .catch(error => {
+                    console.error('Error al enviar el código de verificación:', error);
+                    return res.status(500).send('Error al enviar el código de verificación.');
                   });
-
-                  // Retornar el token al cliente
-                  return res.status(200).json({
-                    token, // El token JWT
-                    message: 'Inicio de sesión exitoso',
-                    userId: user.id
-                  });
-                });
               });
             });
           }
@@ -1053,9 +1039,74 @@ app.post('/login', (req, res) => {
     })
     .catch(error => {
       console.error('Error en la verificación de reCAPTCHA:', error);
-      res.status(500).send('Error en la verificación de reCAPTCHA');
+      res.status(500).send('Error en la verificación de reCAPTCHA.');
     });
 });
+
+
+
+app.post('/verify-code', (req, res) => {
+  const { usuarios, codigoVerificacion } = req.body;
+
+  // Validar los datos recibidos
+  if (!usuarios || !codigoVerificacion) {
+    return res.status(400).json({ success: false, message: 'Usuario o código de verificación no proporcionados.' });
+  }
+
+  const sql = 'SELECT id, role, codigo_verificacion, codigo_expiracion FROM users WHERE usuarios = ?';
+  pool.query(sql, [usuarios], (err, results) => {
+    if (err) {
+      console.error('Error en la consulta de la base de datos:', err);
+      return res.status(500).json({ success: false, message: 'Error interno del servidor.' });
+    }
+
+    if (results.length === 0) {
+      // Mensaje genérico para no dar pistas a un posible atacante
+      return res.status(400).json({ success: false, message: 'Credenciales inválidas.' });
+    }
+
+    const user = results[0];
+
+    // Comprobar si el código de verificación es correcto
+    if (user.codigo_verificacion !== codigoVerificacion) {
+      return res.status(400).json({ success: false, message: 'Código de verificación incorrecto.' });
+    }
+
+    // Comprobar si el código ha expirado
+    if (new Date() > new Date(user.codigo_expiracion)) {
+      return res.status(400).json({ success: false, message: 'El código de verificación ha expirado.' });
+    }
+
+    // Regenerar la sesión y autenticar al usuario
+    req.session.regenerate((err) => {
+      if (err) {
+        console.error('Error al regenerar la sesión:', err);
+        return res.status(500).json({ success: false, message: 'Error interno del servidor.' });
+      }
+
+      req.session.userId = user.id; // Almacena el ID del usuario en la sesión
+      req.session.role = user.role; // Almacena el rol del usuario
+      req.session.isAuthenticated = true; // Marca al usuario como autenticado
+
+      // Generar un token JWT
+      const token = jwt.sign(
+        { id: user.id, role: user.role, usuarios }, // Datos a incluir en el token
+        process.env.JWT_SECRET || 'mi_secreto',    // Clave secreta
+        { expiresIn: '1h' }                       // Expiración del token
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: 'Código de verificación correcto. Sesión iniciada.',
+        token, // Devuelve el token generado
+        role: user.role, // Devuelve el rol del usuario si es necesario
+      });
+    });
+  });
+});
+
+
+
 
 // Ruta para verificar si el token JWT es válido
 // Ruta para verificar si el token JWT es válido
@@ -1102,36 +1153,9 @@ app.post('/logout', (req, res) => {
   });
 });
 
-// Ruta para verificar el código de verificación
-app.post('/verify-code', (req, res) => {
-  const { usuarios, codigoVerificacion } = req.body;
-
-  const sql = 'SELECT codigo_verificacion, codigo_expiracion FROM users WHERE usuarios = ?';
-  pool.query(sql, [usuarios], (err, results) => {
-    if (err) {
-      return res.status(500).send('Error en la consulta de la base de datos.');
-    }
-
-    if (results.length === 0) {
-      return res.status(400).send('Usuario no encontrado.');
-    }
-
-    const user = results[0];
-
-    // Comprobar si el código de verificación es correcto
-    if (user.codigo_verificacion !== codigoVerificacion) {
-      return res.status(400).send('Código de verificación incorrecto.');
-    }
-
-    // Comprobar si el código ha expirado
-    if (new Date() > new Date(user.codigo_expiracion)) {
-      return res.status(400).send('El código de verificación ha expirado.');
-    }
 
 
-    return res.status(200).send('Código de verificación correcto. Bienvenido!');
-  });
-});
+
 
 // Ruta para cambiar contraseña
 // Ruta para solicitar la recuperación de contraseña

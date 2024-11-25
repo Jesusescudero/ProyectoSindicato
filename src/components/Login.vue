@@ -10,33 +10,46 @@
           </div>
           <div class="form-group mb-3">
             <label for="password" class="form-label">Contraseña</label>
-            <input type="password" id="password" v-model="password" class="form-control input-field" required />
+            <!-- Campo de contraseña -->
+            <input :type="showPassword ? 'text' : 'password'" id="password" v-model="password"
+              class="form-control input-field" required />
+            <!-- Botón del ojito -->
+            <button type="button" class="password-toggle-btn" @click="togglePasswordVisibility">
+              <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+            </button>
           </div>
+
           <div class="mb-3 text-center">
             <div class="g-recaptcha" data-sitekey="6LdkUWIqAAAAAL7LRBLA0SpRVLgAUs7KRwAuZRDf"></div>
           </div>
-          <button type="submit" :disabled="isVerifying" class="btn btn-primary w-100">Iniciar Sesión</button>
+          <!-- Botón de Iniciar Sesión -->
+          <button type="submit" :disabled="isVerifying" class="btn btn-primary w-100 btn-lg">Iniciar Sesión</button>
         </form>
 
-        <form v-if="isVerifying" @submit.prevent="verifyCode" class="shadow p-4 rounded bg-light mt-4">
+        <form v-if="isVerifying" @submit.prevent="verifyCode" class="shadow p-4 rounded bg-light mt-4 verify-code-form">
           <div class="form-group mb-3">
             <label for="verificationCode" class="form-label">Ingresa el código de Verificación enviado a tu correo</label>
-            <input type="text" id="verificationCode" v-model="verificationCode" class="form-control input-field"
-              required />
+            <input
+              type="text"
+              id="verificationCode"
+              v-model="verificationCode"
+              class="form-control input-field verification-input"
+              required
+            />
           </div>
-          <button type="submit" class="btn btn-success w-100">Verificar Código</button>
+          <button type="submit" class="btn btn-success w-100 verify-btn">Verificar Código</button>
         </form>
 
         <p v-if="errorMessage" class="text-danger text-center mt-3">{{ sanitizedErrorMessage }}</p>
 
         <!-- Mensaje de error -->
-        
+
         <!-- Botón de restablecer contraseña si la cuenta está bloqueada -->
         <p v-if="errorMessage === 'La cuenta está bloqueada. Inténtalo más tarde.'" class="text-center mt-3">
-         
+
         </p>
         <p v-if="!isVerifying" class="text-center mt-3">
-          <button @click="goToResetPassword" class="btn btn-link">¿Olvidaste tu contraseña?</button>
+          <button @click="goToResetPassword" class="btn btn-link btn-forgot-password">¿Olvidaste tu contraseña?</button>
         </p>
       </div>
     </div>
@@ -58,6 +71,7 @@ export default {
       verificationCode: '',
       errorMessage: '',
       isVerifying: false,
+      showPassword: false, // Estado para alternar la visibilidad de la contraseña
     };
   },
   computed: {
@@ -74,6 +88,9 @@ export default {
     document.body.appendChild(recaptchaScript);
   },
   methods: {
+    togglePasswordVisibility() {
+      this.showPassword = !this.showPassword;
+    },
     async loginUser() {
       try {
         const recaptchaToken = grecaptcha.getResponse();
@@ -102,13 +119,7 @@ export default {
         if (response.status === 200) {
           this.errorMessage = '';
           this.isVerifying = true;
-          // Si el token está en el cuerpo de la respuesta, guárdalo
-          if (response.data.token) {
-            localStorage.setItem('token', response.data.token);
-            console.log('Token recibido y almacenado:', response.data.token);
-          } else {
-            console.error('Token no recibido');
-          }
+          
         }
       } catch (error) {
         if (error.response) {
@@ -131,7 +142,7 @@ export default {
     isValidPassword(password) {
       return validator.isLength(password, { min: 8 });
     },
-    
+
     async verifyCode() {
       console.log('Usuario:', this.username);
       console.log('Código de verificación:', this.verificationCode);
@@ -143,6 +154,13 @@ export default {
         }, {
           withCredentials: true // Asegurarse de que la cookie se envíe con la solicitud
         });
+        // Si el token está en el cuerpo de la respuesta, guárdalo
+        if (response.data.token) {
+            localStorage.setItem('token', response.data.token);
+            console.log('Token recibido y almacenado:', response.data.token);
+          } else {
+            console.error('Token no recibido');
+          }
 
         if (response.status === 200) {
           // Redirigir a la página de bienvenida
@@ -172,122 +190,194 @@ export default {
       console.error('Error:', error);
     },
     goToResetPassword() {
-    this.$router.push({ name: 'reset-password' }); // Cambia 'reset-password' por la ruta correspondiente
-  },
+      this.$router.push({ name: 'reset-password' }); // Cambia 'reset-password' por la ruta correspondiente
+    },
   },
 };
 </script>
 
-<style>
+<style >
+/* Contenedor del formulario */
+/* Contenedor general */
 .container {
   max-width: 400px;
-  /* Limitar el ancho máximo del contenedor */
+  /* Ancho máximo del formulario */
   margin: auto;
   /* Centrar el contenedor */
   background-color: #f7f7f7;
-  /* Color de fondo suave */
   padding: 20px;
-  /* Espacio interior */
   border-radius: 8px;
-  /* Bordes redondeados */
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  /* Sombra suave */
 }
 
+/* Títulos */
 h1 {
   color: #333;
-  /* Color del título */
+  text-align: center;
+  font-size: 1.5rem;
+  margin-bottom: 20px;
 }
 
-.shadow {
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  /* Agregar sombra suave */
-}
-
-.bg-light {
-  background-color: #ffffff !important;
-  /* Fondo blanco para formularios */
-}
-
-.form-group {
-  margin-bottom: 1.5rem;
-  /* Espaciado entre campos */
+/* Campos de entrada */
+.input-field {
+  border: 1px solid #ced4da;
+  border-radius: 5px;
+  padding: 8px;
+  font-size: 0.9rem;
+  max-width: 300px;
+  /* Ancho máximo de los campos */
+  width: 100%;
+  /* Asegura que se adapte a dispositivos pequeños */
+  margin: 0 auto;
+  /* Centrar el campo */
+  display: block;
+  box-sizing: border-box;
+  /* Incluye el padding dentro del ancho */
 }
 
 .input-field {
   border: 1px solid #ced4da;
-  /* Borde claro */
   border-radius: 5px;
-  /* Bordes redondeados */
-  padding: 10px;
-  /* Espacio interior */
-  transition: border-color 0.3s;
-  /* Transición suave para el borde */
-  max-width: 100%;
-  /* Asegura que el campo no exceda el ancho del contenedor */
-  width: calc(100% - 20px);
-  /* Asegura que haya espacio a los lados */
-  margin: 0 auto;
-  /* Centra el campo */
+  padding: 8px 40px 8px 8px;
+  /* Espacio extra a la derecha para el botón */
+  font-size: 0.9rem;
+  width: 100%;
+  box-sizing: border-box;
+  /* Asegura que el padding no expanda el campo */
 }
+
 
 .input-field:focus {
   border-color: #007bff;
-  /* Color del borde al enfocarse */
   outline: none;
-  /* Sin borde de enfoque */
+
+}
+
+/* Campo de contraseña con botón dentro */
+.form-group {
+  position: relative;
+  /* Necesario para posicionar elementos dentro */
+}
+
+/* Icono de mostrar contraseña */
+.password-toggle-btn {
+  position: absolute;
+  /* Coloca el ojito dentro del campo */
+  top: 65%;
+  /* Ajusta este valor para mover hacia abajo */
+  right: 10px;
+  /* Separación del borde derecho */
+  transform: translateY(-50%);
+  /* Asegura el centrado vertical relativo a la altura */
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.password-toggle-btn i {
+  font-size: 1rem;
+  /* Tamaño del ícono ajustado */
+  color: #333;
+}
+
+/* ReCaptcha */
+.g-recaptcha {
+  margin: 20px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* Botones */
+/* Botón principal (Iniciar Sesión) */
+.btn-primary {
+  background-color: #09c30f;
+  /* Color verde para Iniciar Sesión */
+  color: white;
+  border: none;
+  padding: 12px;
+  /* Más grande que el estándar */
+  font-size: 1rem;
+  /* Texto más grande */
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: #07a30c;
+  /* Verde más oscuro */
+}
+
+
+/* Espaciado entre grupos */
+.form-group {
+  margin-bottom: 1rem;
+  /* Reduce la separación entre campos */
+  position: relative;
+  /* Necesario para posicionar el ojito */
+}
+
+/* Botón secundario (Olvidaste tu contraseña) */
+/* Botón de "¿Olvidaste tu contraseña?" */
+.btn-forgot-password {
+  background: none;
+  border: none;
+  color: #007bff;
+  /* Color azul */
+  font-size: 0.9rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-forgot-password:hover {
+  color: #0056b3;
+  /* Azul más oscuro al pasar el cursor */
+  text-decoration: underline;
+}
+/* Estilos específicos para el formulario de verificación de código */
+.verify-code-form {
+  border: 1px solid #28a745; /* Borde verde para resaltar */
+  padding: 20px; /* Espaciado interno */
+  border-radius: 8px; /* Bordes redondeados */
+  background-color: #f8f9fa; /* Fondo claro */
+}
+
+.verify-code-form h1 {
+  font-size: 1.8rem;
+  color: #4a4a4a; /* Color neutro para el encabezado */
+  text-align: center;
+}
+
+.verification-input {
+  border: 1px solid #28a745; /* Color del borde verde */
+  border-radius: 5px; /* Bordes redondeados */
+  padding: 10px; /* Espaciado interno */
+  font-size: 1rem; /* Tamaño de la fuente */
+  width: 100%; /* Asegura que ocupe todo el ancho */
+  margin-bottom: 15px; /* Separación entre campos */
+}
+
+.verify-btn {
+  background-color: #28a745; /* Fondo verde */
+  color: white; /* Texto blanco */
+  border: none; /* Sin borde adicional */
+  border-radius: 5px; /* Bordes redondeados */
+  padding: 12px 20px; /* Tamaño del botón */
+  font-size: 1.1rem; /* Tamaño de la fuente */
+  width: 100%; /* Botón de ancho completo */
+  cursor: pointer; /* Cambiar el cursor al pasar */
+}
+
+.verify-btn:hover {
+  background-color: #218838; /* Color más oscuro al pasar */
 }
 
 .text-danger {
-  color: red;
-  /* Color rojo para mensajes de error */
+  font-weight: bold; /* Resaltar el texto */
+  color: #dc3545; /* Rojo para mensajes de error */
+  text-align: center; /* Centrar el mensaje */
+  margin-top: 15px;
 }
 
-.btn {
-  background-color: #09c30f;
-  /* Color de fondo del botón */
-  color: white;
-  /* Color del texto del botón */
-  border: none;
-  /* Sin borde */
-  padding: 10px;
-  /* Espaciado interior */
-  border-radius: 4px;
-  /* Bordes redondeados */
-  cursor: pointer;
-  /* Cambiar cursor al pasar sobre el botón */
-  transition: background-color 0.3s ease;
-  /* Transición suave */
-}
-
-.btn:hover {
-  background-color: #09c30f;
-  /* Color de fondo del botón al pasar el mouse */
-}
-
-form {
-  padding: 20px;
-  /* Agregar espacio interno al cuadro */
-  margin-bottom: 20px;
-  /* Agregar espacio inferior entre cuadros */
-}
-
-input {
-  width: 100%;
-  padding: 10px;
-  /* Espacio interno en el campo de entrada */
-  margin-bottom: 15px;
-  /* Espacio inferior entre campos */
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-/* Ajustar el padding del cuadro de verificación si es necesario */
-.g-recaptcha {
-  margin: 20px 0;
-  /* Margen arriba y abajo del reCAPTCHA */
-  display: flex;
-  justify-content: center;
-  /* Centrar el reCAPTCHA */
-}
 </style>
