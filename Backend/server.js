@@ -248,7 +248,7 @@ app.post('/update-social-links', (req, res) => {
 });
 
 // Ruta para actualizar el título de la página
-app.post('/update-title', verifyAdmin, (req, res) => {
+app.post('/update-title', (req, res) => {
   const { title } = req.body;
 
   console.log('Título recibido:', title);  // Verifica si el valor del título es correcto
@@ -271,6 +271,23 @@ app.post('/update-title', verifyAdmin, (req, res) => {
 // Ruta para obtener el nombre de la empresa y el slogan
 app.get('/company-name', (req, res) => {
   const sql = 'SELECT nombre_empresa, eslogan FROM configuracion_empresa WHERE id = 1';
+
+  pool.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error al obtener los datos de la empresa:', err);
+      return res.status(500).json({ message: 'Error al obtener los datos de la empresa.' });
+    }
+
+    if (results.length > 0) {
+      res.status(200).json(results[0]); // Retorna el nombre y el slogan
+    } else {
+      res.status(404).json({ message: 'Datos de la empresa no encontrados.' });
+    }
+  });
+});
+
+app.get('/company-title', (req, res) => {
+  const sql = 'SELECT nombre_empresa FROM configuracion_empresa WHERE id = 1';
 
   pool.query(sql, (err, results) => {
     if (err) {
@@ -827,6 +844,7 @@ app.post('/register', async (req, res) => {
     tieneDoctorado,
     nombreDoctorado,
     estatus,
+    graduation_detail,
     numeroTrabajador,
     numeroSindicalizado,
     usuarios,
@@ -910,14 +928,14 @@ app.post('/register', async (req, res) => {
     if (err) return res.status(500).send('Error al encriptar la contraseña');
 
     const sql = `INSERT INTO users 
-    (nombre, apellido_paterno, apellido_materno, telefono, correo, puesto, tiene_maestria, maestrias, tiene_doctorado, doctorados, esta_titulado, numero_trabajador, numero_sindicalizado, usuarios, password) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    (nombre, apellido_paterno, apellido_materno, telefono, correo, puesto, tiene_maestria, maestrias, tiene_doctorado, doctorados, esta_titulado, numero_trabajador, numero_sindicalizado, graduation_detail, usuarios, password) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)`;
 
 
     pool.query(sql, [
       nombre, apellidoPaterno, apellidoMaterno, telefono, correo, puesto,
       tieneMaestria, nombreMaestria, tieneDoctorado, nombreDoctorado, estatus,
-      numeroTrabajador, numeroSindicalizado, usuarios, hash
+      numeroTrabajador, numeroSindicalizado, graduation_detail, usuarios, hash
     ], (err, result) => {
       if (err) {
         if (err.code === 'ER_DUP_ENTRY') {

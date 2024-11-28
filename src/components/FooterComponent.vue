@@ -1,18 +1,41 @@
 <template>
   <footer class="footer">
     <div class="footer-content">
-      <p>&copy; 2024 {{ companyName }}. Todos los derechos reservados.</p>
-      <p>Dirección: {{ contactInfo.address }}</p>
-      <p>Contacto: {{ contactInfo.email }} | Teléfono: {{ contactInfo.phone }}</p>
-      <p>
-        <a :href="socialLinks.facebook" target="_blank">Facebook</a> | 
-        <a :href="socialLinks.instagram" target="_blank">Instagram</a>
-      </p>
-      
-      <!-- Enlaces para descargar los documentos -->
-      <div class="document-links">
-        <p><a href="https://proyectosin.onrender.com/download-terminos-condiciones" target="_blank">Términos y Condiciones</a></p>
-        <p><a href="https://proyectosin.onrender.com/download-politica-privacidad" target="_blank">Política de Privacidad</a></p>
+      <!-- Columna 1: Información de la empresa -->
+      <div class="footer-left">
+        <p>&copy; 2024 <strong>{{ companyName }}</strong>. Todos los derechos reservados.</p>
+        <p>Dirección: <span>{{ contactInfo.address }}</span></p>
+        <div class="contact-info">
+          <p>Contacto:</p>
+          <p>
+      <strong>Correo:</strong> <a :href="`mailto:${contactInfo.email}`">{{ contactInfo.email }}</a>
+    </p>
+    <p>
+      <strong>Teléfono:</strong> <a :href="`tel:${contactInfo.phone}`">{{ contactInfo.phone }}</a>
+    </p>
+        </div>
+      </div>
+
+      <!-- Columna 2: Redes sociales -->
+      <div class="footer-column social-links">
+        <p>Síguenos:</p>
+        <div class="social-icons">
+          <a :href="socialLinks.facebook" target="_blank" aria-label="Facebook">
+            <i class="fab fa-facebook-f"></i>
+          </a>
+          <a :href="socialLinks.instagram" target="_blank" aria-label="Instagram">
+            <i class="fab fa-instagram"></i>
+          </a>
+        </div>
+      </div>
+
+
+      <!-- Columna 3: Documentos legales -->
+      <div class="footer-column document-links">
+        <p><a href="https://proyectosin.onrender.com/download-terminos-condiciones" target="_blank">Términos y
+            Condiciones</a></p>
+        <p><a href="https://proyectosin.onrender.com/download-politica-privacidad" target="_blank">Política de
+            Privacidad</a></p>
         <p><a href="https://proyectosin.onrender.com/download-deslinde-legal" target="_blank">Deslinde Legal</a></p>
       </div>
     </div>
@@ -36,12 +59,12 @@ export default {
         facebook: '',
         instagram: ''
       },
-      
+
     };
   },
   created() {
     this.fetchCompanyData();     // Llamar a la función al crear el componente
-    
+
   },
   methods: {
     async fetchCompanyData() {
@@ -64,66 +87,131 @@ export default {
         console.error("Error al obtener los datos de la empresa:", error);
       }
     },
-    
+
   }
 };
 </script>
 
 <style scoped>
+.footer-left {
+  text-align: center; /* Centrar el contenido */
+}
+
+.contact-info {
+  margin-top: 10px; /* Espaciado superior */
+}
+
+.contact-info p {
+  margin: 5px 0; /* Espaciado entre líneas */
+}
+
+.contact-info a {
+  color: white; /* Mantener el color blanco para los enlaces */
+  text-decoration: none; /* Sin subrayado */
+  transition: color 0.3s ease;
+}
+
+.contact-info a:hover {
+  color: #b0ffc3; /* Cambiar color al pasar el cursor */
+}
+/* Contenedor principal del pie de página */
 .footer {
-  background-color: #049206; /* Color de fondo */
-  color: white; /* Color del texto */
-  padding: 20px; /* Espaciado interior */
-  text-align: center; /* Centrar texto */
-  width: 100%; /* Abarcar todo el ancho */
-  position: relative; /* Asegura que el pie de página se mantenga en su lugar */
-  bottom: 0; /* Asegúrate de que esté al final */
-  margin-top: 30px; /* Margen superior para separarlo del contenido */
+  background-color: #049206;
+  /* Fondo verde */
+  color: white;
+  /* Texto blanco */
+  padding: 20px 0;
+  /* Espaciado superior e inferior */
+  text-align: center;
+  /* Centrar texto por defecto */
+  width: 100%;
+  /* Ocupa todo el ancho */
 }
 
+/* Contenido del pie */
 .footer-content {
-  max-width: 1200px; /* Limitar el ancho del contenido */
-  margin: auto; /* Centrar el contenido */
+  max-width: 1200px;
+  margin: auto;
+  /* Centra el contenido horizontalmente */
+  display: flex;
+  /* Usamos flexbox para organizar las columnas */
+  justify-content: space-between;
+  /* Espacio entre columnas */
+  flex-wrap: wrap;
+  /* Permitir que las columnas se acomoden en pantallas pequeñas */
 }
 
-.footer p {
-  margin: 5px 0; /* Espaciado entre párrafos */
+/* Columnas individuales */
+.footer-column {
+  flex: 1;
+  /* Cada columna toma el mismo espacio */
+  margin: 10px;
+  /* Separación entre columnas */
+  text-align: left;
+  /* Alineación del texto */
 }
 
+/* Estilo para enlaces */
 .footer a {
-  color: white; /* Color de los enlaces */
-  text-decoration: none; /* Quitar subrayado */
+  color: white;
+  text-decoration: none;
+  transition: color 0.3s ease;
 }
 
 .footer a:hover {
-  text-decoration: underline; /* Subrayar al pasar el cursor */
+  color: #b0ffc3;
+  /* Color más claro al pasar el cursor */
 }
 
-.documents-list {
-  margin-top: 20px;
+/* Redes sociales */
+.social-links {
+  text-align: center;
+  /* Centra el contenido de la columna */
 }
 
-.documents-list h4 {
-  margin-bottom: 10px;
-  font-weight: bold;
+.social-links .social-icons {
+  margin-top: 10px;
+  /* Espaciado entre el texto y los íconos */
+  display: flex;
+  justify-content: center;
+  /* Centra los íconos horizontalmente */
+  gap: 15px;
+  /* Espaciado entre los íconos */
 }
 
-.documents-list ul {
-  list-style: none;
-  padding: 0;
+.social-links .social-icons a {
+  color: rgb(255, 255, 255);
+  /* Color del ícono */
+  font-size: 24px;
+  /* Tamaño del ícono */
+  transition: transform 0.3s ease, color 0.3s ease;
 }
 
-.documents-list li {
-  margin-bottom: 5px;
+.social-links .social-icons a:hover {
+  transform: scale(1.2);
+  /* Efecto de zoom */
+  color: #b0ffc3;
+  /* Cambia el color al pasar el cursor */
 }
 
-.documents-list a {
-  color: #ffffff;
-  text-decoration: none;
+/* Documentos legales */
+.document-links p {
+  margin: 5px 0;
+  /* Separación entre enlaces */
 }
 
-.documents-list a:hover {
-  text-decoration: underline;
+.document-links a {
+  display: inline-block;
+  font-size: 14px;
+  border: 1px solid white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.document-links a:hover {
+  background-color: white;
+  color: #049206;
+  /* Verde del fondo */
 }
 </style>
-

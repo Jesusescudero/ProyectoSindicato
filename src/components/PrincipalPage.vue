@@ -46,16 +46,7 @@
         </div>
       </section>
   
-      <!-- Contact Section -->
-      <section class="contact-info">
-        <h2>Contáctanos</h2>
-        <p>Si tienes alguna duda o requieres asistencia, puedes comunicarte con nosotros a través de:</p>
-        <ul>
-          <li><strong>Email:</strong> contacto@sindicato.edu.mx</li>
-          <li><strong>Teléfono:</strong> +52 771 123 4567</li>
-          <li><strong>Dirección:</strong> Calle Universidad, 123, Pachuca, Hidalgo.</li>
-        </ul>
-      </section>
+      
     </div>
   </template>
   

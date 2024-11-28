@@ -10,6 +10,7 @@
 <script>
 import FooterComponent from './components/FooterComponent.vue'; // Cambia aquí el nombre
 import HeaderComponent from './components/HeaderComponent.vue';
+import axios from 'axios';
 
 export default {
   name: 'App',
@@ -17,7 +18,26 @@ export default {
     HeaderComponent,
     FooterComponent, // Cambia aquí el nombre
   },
+  created() {
+    this.fetchCompanyTitle();
+  },
+  methods: { // Coloca "methods" dentro de "export default"
+    async fetchCompanyTitle() {
+      try {
+        const response = await axios.get('https://proyectosin.onrender.com/company-title'); // Ruta del backend
+        if (response.data && response.data.nombre_empresa) {
+          document.title = response.data.nombre_empresa; // Cambia el título de la pestaña dinámicamente
+        } else {
+          document.title = "Título por defecto"; // En caso de no encontrar datos
+        }
+      } catch (error) {
+        console.error("Error al obtener el título de la empresa:", error);
+        document.title = "Error al cargar"; // En caso de error
+      }
+    },
+  },
 }
+
 </script>
 
 <style scoped>

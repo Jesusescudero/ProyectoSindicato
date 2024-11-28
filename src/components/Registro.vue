@@ -67,6 +67,7 @@
 
                 <div v-if="step === 2" class="animate__animated animate__fadeIn">
                     <h4 class="mb-3">Información Académica</h4>
+
                     <div class="mb-3">
                         <label for="position" class="form-label">Seleccione un puesto</label>
                         <!-- Dropdown dinámico para seleccionar el puesto -->
@@ -78,6 +79,32 @@
                             </option>
                         </select>
                         <p v-if="errorPosition" class="text-danger">{{ errorPosition }}</p>
+                    </div>
+
+                    <div class="form-group row">
+                        <label for="isGraduated" class="col-sm-4 col-form-label">¿Está titulado o es pasante?</label>
+                        <div class="col-sm-8">
+                            <select id="isGraduated" v-model="isGraduated" @change="validateGraduation"
+                                class="form-control" required>
+                                <option value="Titulado">Titulado</option>
+                                <option value="Pasante">Pasante</option>
+                            </select>
+                            <p v-if="graduationError" class="text-danger">{{ graduationError }}</p>
+                        </div>
+                    </div>
+
+                    <div v-if="isGraduated === 'Titulado'" class="mb-3">
+                        <label for="titulo" class="form-label">¿En qué estás titulado?</label>
+                        <input type="text" id="titulo" v-model="titulo" @input="validateTitulo" class="form-control"
+                            required />
+                        <p v-if="tituloError" class="text-danger">{{ tituloError }}</p>
+                    </div>
+
+                    <div v-if="isGraduated === 'Pasante'" class="mb-3">
+                        <label for="carrera" class="form-label">¿De qué carrera eres pasante?</label>
+                        <input type="text" id="carrera" v-model="carrera" @input="validateCarrera" class="form-control"
+                            required />
+                        <p v-if="carreraError" class="text-danger">{{ carreraError }}</p>
                     </div>
 
 
@@ -116,18 +143,6 @@
                     </div>
 
 
-                    <div class="form-group row">
-                        <label for="isGraduated" class="col-sm-4 col-form-label">¿Está titulado o es pasante?</label>
-                        <div class="col-sm-8">
-                            <select id="isGraduated" v-model="isGraduated" @change="validateGraduation"
-                                class="form-control" required>
-                                <option value="Titulado">Titulado</option>
-                                <option value="Pasante">Pasante</option>
-                            </select>
-                            <p v-if="graduationError" class="text-danger">{{ graduationError }}</p>
-                        </div>
-                    </div>
-
                     <div class="form-group">
                         <label for="employeeNumber">Número de Trabajador</label>
                         <input type="text" id="employeeNumber" v-model="employeeNumber" @input="validateEmployeeNumber"
@@ -155,7 +170,9 @@
 
                     <div class="mb-3">
                         <label for="username" class="form-label">Usuario</label>
-                        <input type="text" id="username" v-model="username" class="form-control" required />
+                        <input type="text" id="username" v-model="username" class="form-control"
+                            @input="validateUsername" required />
+                        <p v-if="usernameError" class="text-danger">{{ usernameError }}</p>
                     </div>
 
                     <div class="mb-3">
@@ -188,8 +205,8 @@
 
                     <div class="d-flex justify-content-between custom-gap">
                         <button type="button" class="btn btn-secondary" @click="previousStep">Anterior</button>
-                        
-                        <button type="submit" class="btn btn-success">Registrar</button>
+
+                        <button type="submit" class="btn btn-success" :disabled="isSubmitting">Registrar</button>
                     </div>
                 </div>
             </form>
@@ -223,7 +240,11 @@ export default {
             doctorateName: '',
             masterNameError: '',
             doctorateNameError: '',
-            isGraduated: 'graduated',
+            isGraduated: '', // Titulado o Pasante
+            titulo: '',
+            carrera: '',
+            tituloError: '',
+            carreraError: '',
             employeeNumber: '',
             unionNumber: '',
             username: '',
@@ -259,7 +280,9 @@ export default {
             unionNumberError: '',
             step: 1,
             csrfToken: '',
+            isSubmitting: false,
         };
+        
     },
     async mounted() {
         await this.fetchPuestos(); // Cargar los puestos al montar el componente
@@ -387,6 +410,41 @@ export default {
                 this.graduationError = '';
             }
         },
+        validateTitulo() {
+            this.tituloError = '';
+            if (!this.titulo.trim()) {
+                this.tituloError = 'El título no puede estar vacío.';
+            } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(this.titulo)) {
+                this.tituloError = 'El título solo puede contener letras y espacios.';
+            } else if (this.titulo.trim().length < 3 || this.titulo.trim().length > 100) {
+                this.tituloError = 'El título debe tener entre 3 y 100 caracteres.';
+            }
+        },
+        validateCarrera() {
+            this.carreraError = '';
+            if (!this.carrera.trim()) {
+                this.carreraError = 'La carrera no puede estar vacía.';
+            } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(this.carrera)) {
+                this.carreraError = 'La carrera solo puede contener letras y espacios.';
+            } else if (this.carrera.trim().length < 3 || this.carrera.trim().length > 100) {
+                this.carreraError = 'La carrera debe tener entre 3 y 100 caracteres.';
+            }
+        },
+        validateGraduationDetails() {
+            // Validar título si es titulado
+            if (this.isGraduated === 'Titulado') {
+                this.validateTitulo();
+                if (this.tituloError) return false;
+            }
+
+            // Validar carrera si es pasante
+            if (this.isGraduated === 'Pasante') {
+                this.validateCarrera();
+                if (this.carreraError) return false;
+            }
+
+            return true; // Pasan las validaciones
+        },
         validateEmployeeNumber() {
             if (!/^\d+$/.test(this.employeeNumber) || this.employeeNumber.length < 1 || this.employeeNumber.length > 20) {
                 this.employeeNumberError = 'Número de Trabajador inválido. Debe contener solo números.';
@@ -510,6 +568,12 @@ export default {
             if (!this.validatePosition()) {
                 return false; // Detiene el avance si no se ha seleccionado un puesto
             }
+            
+
+            // Validar detalles de graduación
+            if (!this.validateGraduationDetails()) {
+                return false; // Detener si hay errores en titulación o carrera
+            }
 
 
             // Validar si tiene maestría, entonces nombreMaestria es obligatorio
@@ -550,9 +614,10 @@ export default {
         validateStep3() {
             this.username = this.sanitizeInput(this.username);
 
-            if (!this.username || this.username.length < 4) {
-                alert('El nombre de usuario debe tener al menos 4 caracteres.');
-                return false;
+
+            if (!this.validateUsername()) {
+                this.errorMessage = this.usernameError; // Mostrar el error general, si es necesario
+                return false; // Detener el flujo si no pasa la validación
             }
 
 
@@ -643,6 +708,24 @@ export default {
 
             return false;
         },
+        validateUsername() {
+            this.usernameError = ''; // Reiniciar errores previos
+
+            // Verificar que el nombre de usuario tenga al menos 4 caracteres
+            if (!this.username || this.username.trim().length < 4) {
+                this.usernameError = 'El nombre de usuario debe tener al menos 4 caracteres.';
+                return false;
+            }
+
+            // Verificar que no tenga caracteres no permitidos
+            if (!/^[a-zA-Z0-9_]+$/.test(this.username)) {
+                this.usernameError = 'El usuario solo puede contener letras, números y guiones bajos.';
+                return false;
+            }
+
+            return true; // Pasa la validación
+        },
+
 
 
         evaluatePassword() {
@@ -767,7 +850,7 @@ export default {
                     this.errorMessage = 'Debe seleccionar un puesto válido.';
                     return;
                 }
-
+                const graduationDetail = this.isGraduated === 'Titulado' ? this.titulo : this.carrera;
                 const response = await axios.post('https://proyectosin.onrender.com/register', {
                     nombre: this.firstName,
                     apellidoPaterno: this.lastName,
@@ -780,10 +863,13 @@ export default {
                     tieneDoctorado: this.hasDoctorate,
                     nombreDoctorado: this.doctorateName,
                     estatus: this.isGraduated,
+                     // Unifica título o carrera aquí
                     numeroTrabajador: this.employeeNumber,
                     numeroSindicalizado: this.unionNumber,
+                    graduation_detail: graduationDetail,
                     usuarios: this.username,
                     password: this.password,
+                    
 
                 },
 
@@ -813,8 +899,13 @@ export default {
 
 
         async handleSubmit() {
+
             // Verificar si las contraseñas coinciden antes de registrar
             this.checkPasswordsMatch();
+
+            if (!this.validateUsername()) {
+                return; // Detener si la validación falla
+            }
 
             // Si las contraseñas no coinciden, no se puede proceder
             if (!this.passwordsMatch) {
@@ -931,9 +1022,12 @@ label {
 }
 
 select {
-    font-size: 1rem; /* Ensure consistent font size */
-    padding: 0.375rem 0.75rem; /* Match Bootstrap padding */
-    border-radius: 0.25rem; /* Ensure consistent border radius */
+    font-size: 1rem;
+    /* Ensure consistent font size */
+    padding: 0.375rem 0.75rem;
+    /* Match Bootstrap padding */
+    border-radius: 0.25rem;
+    /* Ensure consistent border radius */
 }
 
 /* Botones */
@@ -999,7 +1093,8 @@ select {
 }
 
 .custom-gap {
-    gap: 50px; /* Cambia el valor según el espacio deseado */
+    gap: 50px;
+    /* Cambia el valor según el espacio deseado */
 }
 
 
@@ -1012,11 +1107,13 @@ select {
 .button-group {
     display: flex;
     justify-content: center;
-    gap: 1rem; /* Adjusts the space between buttons */
+    gap: 1rem;
+    /* Adjusts the space between buttons */
 }
 
 .button-group .btn {
-    padding: 0.5rem 1.5rem; /* Adjusts button size */
+    padding: 0.5rem 1.5rem;
+    /* Adjusts button size */
 }
 
 

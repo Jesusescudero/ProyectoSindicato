@@ -25,7 +25,8 @@
 
     <!-- Listado de documentos -->
     <h3 class="mt-5">Historial de Versiones</h3>
-    <table class="table table-striped mt-3">
+    <div class="table-container">
+      <table class="table table-striped mt-3">
       <thead>
         <tr>
           <th>Versión</th>
@@ -49,6 +50,8 @@
         </tr>
       </tbody>
     </table>
+    </div>
+    
 
     <p v-if="message" class="text-success">{{ message }}</p>
   </div>
@@ -222,105 +225,166 @@ export default {
 
 
 <style scoped>
-  /* Centrar y agregar márgenes superiores */
-  h2 {
-    margin-top: 20px;
-    margin-bottom: 20px;
-  }
-
-  /* Estilo para el formulario */
-  form {
-    margin-top: 20px;
-    padding: 30px;
-    background-color: #f9f9f9;
-    border-radius: 8px;
-  }
-
-  /* Espaciado en las tablas */
-  table {
-    margin-top: 20px;
-  }
-
-  /* Tamaño de los botones en las acciones */
-  table td button, table td a {
-    margin-right: 5px;
-  }
-
-  /* Estilo de hover para las filas */
-  table tbody tr:hover {
-    background-color: #f0f0f0;
-  }
-
-  /* Espaciado inferior en el cuerpo */
+  /* Contenedor principal */
   .container {
-    margin-bottom: 50px;
+    max-width: 900px;
+    margin: 30px auto;
+    background: #dbd5d5;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   }
 
-  /* Estilo para la tabla */
-  .table-striped tbody tr:nth-of-type(odd) {
-    background-color: rgba(0, 0, 0, 0.05);
+  /* Títulos principales */
+  h2 {
+    margin-bottom: 30px;
+    text-align: center;
+    color: #000000; /* Azul Bootstrap */
+    font-weight: 600;
   }
 
-  .table-hover tbody tr:hover {
-    background-color: rgba(0, 0, 0, 0.1);
+  /* Subtítulos */
+  h3 {
+    margin-top: 30px;
+    margin-bottom: 20px;
+    color: #000000; /* Gris oscuro */
+    font-weight: 500;
+    text-align: center;
   }
 
-  /* Ajustar márgenes y colores para la tabla */
-  .table-dark {
-    background-color: #343a40;
-    color: white;
+  /* Estilos del formulario */
+  form {
+    padding: 20px;
+    background-color: #f8f9fa; /* Fondo claro */
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Sombra ligera */
+  }
+
+  .form-group label {
+    font-weight: 500;
+    color: #495057; /* Gris Bootstrap */
+  }
+
+  .form-control {
+    border-radius: 8px;
+    padding: 10px;
+    border: 1px solid #ced4da;
+  }
+
+  .btn-primary {
+    background-color: #02aa0a;
+    border-color: #02aa0a;
+    border-radius: 20px;
+    padding: 10px 20px;
+    font-weight: bold;
+    transition: all 0.3s ease-in-out;
+  }
+
+  .btn-primary:hover {
+    background-color: #0fb300;
+    border-color: #00b324;
+    transform: scale(1.05);
+  }
+
+  .btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    border-radius: 20px;
+    padding: 10px 20px;
+    font-weight: bold;
+    transition: all 0.3s ease-in-out;
+  }
+
+  .btn-secondary:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
+    transform: scale(1.05);
+  }
+
+   /* Contenedor de la tabla centrada */
+   .table-container {
+  display: flex; /* Usar Flexbox */
+  justify-content: center; /* Centrar horizontalmente */
+  align-items: center; /* Centrar verticalmente */
+  margin-top: 20px;
+  margin-bottom: 20px;
+  height: 100%; /* Asegura que ocupe el espacio completo */
+}
+
+  /* Estilo general de la tabla */
+  .table {
+    border-collapse: collapse;
+    border: 1px solid #dacfcf;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Cabecera de la tabla */
+  .table thead th {
+    background-color: #02aa0a;
+    color: #333;
+    text-align: center;
+    font-weight: bold;
+    padding: 10px;
+    border-bottom: 2px solid #ddd;
+  }
+
+  /* Cuerpo de la tabla */
+  .table tbody tr:nth-child(odd) {
+    background-color: #f9f9f9;
+  }
+
+  .table tbody tr:nth-child(even) {
+    background-color: #fff;
+  }
+
+  .table tbody td {
+    padding: 10px;
+    text-align: center;
+    vertical-align: middle;
+    border-bottom: 1px solid #ddd;
+  }
+
+  /* Hover para las filas */
+  .table tbody tr:hover {
+    background-color: #f1f1f1;
+  }
+
+  /* Botones de acción */
+  .btn {
+    padding: 5px 10px;
+    font-size: 14px;
+    border-radius: 4px;
   }
 
   .btn-danger {
-    background-color: #dc3545;
-    border-color: #dc3545;
-  }
-
-  .btn-info {
-    background-color: #17a2b8;
-    border-color: #17a2b8;
-  }
-
-  .btn-info:hover {
-    background-color: #138496;
-    border-color: #117a8b;
+    background-color: #e74c3c;
+    border-color: #e74c3c;
+    color: white;
   }
 
   .btn-danger:hover {
-    background-color: #c82333;
-    border-color: #bd2130;
-  }
-  .container {
-    max-width: 800px;
-    margin-top: 20px;
+    background-color: #c0392b;
+    border-color: #c0392b;
   }
 
-  .table td, .table th {
-    vertical-align: middle;
+  .btn-info {
+    background-color: #3498db;
+    border-color: #3498db;
+    color: white;
   }
 
-  .table-hover tbody tr:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+  .btn-info:hover {
+    background-color: #2980b9;
+    border-color: #2980b9;
   }
 
-  /* Añadir espacio entre los botones en la columna de acciones */
-  .actions-column {
-    white-space: nowrap;
-  }
-
+  /* Columna de acciones */
   .actions-column .btn {
-    margin-bottom: 5px;
-  }
-
-  /* Ajustar el tamaño de los botones para que no se amontonen */
-  .btn-danger, .btn-info {
-    min-width: 100px;
-  }
-
-  /* Aplicar márgenes adicionales entre los botones */
-  .me-2 {
-    margin-right: 8px;
+    margin: 0 5px;
   }
 </style>
+
 
 
